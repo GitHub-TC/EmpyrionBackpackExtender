@@ -27,7 +27,7 @@ Zusammen mit einem Backslash am Anfang und im Fraktionschat sind die Kommandos a
 * \\vb N = öffnet das N-te persönliche Backpack
 * \\vb buy = kauft ein weiteres persönliches Backpack
 
-##Konfiguration
+## Konfiguration
 * ChatCommandPrefix = Zeichen mit dem das Chatkommando beginnen muss
 * Einstellungen für die verschiedenen Backpacktypen
   * ChatCommand = Chatkommandotext

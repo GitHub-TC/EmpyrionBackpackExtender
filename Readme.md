@@ -2,7 +2,7 @@
 
 ## Installation
 Sie können diesen Mod direkt mit dem MOD-Manager von EWA (Empyrion Web Access) laden. <br/>
-Ohne den EWA funktioniert der Mod nur innerhalb des EmpyrionModHost
+Ohne den EWA funktioniert der Mod (vermutlich) nur innerhalb des EmpyrionModHost
 
 ## Konfigurieren Sie Ihre erlaubten Backpacks
 Nach der Installation und dem Start der Mods ist hier die Konfiguration abgelegt, die angepasst werden kann.
@@ -45,7 +45,7 @@ Zusammen mit einem Backslash am Anfang und im Fraktionschat sind die Kommandos a
 
 ## Installation
 You can load this mod directly with the EWA (Empyrion Web Access) MOD Manager. <br/>
-Without the EWA, the mod only works within the EmpyrionModHost
+Without the EWA, the mod may only works within the EmpyrionModHost
 
 ## Configure your allowed backpacks
 After the installation and the start of the mods the configuration is stored here, which can be adapted.

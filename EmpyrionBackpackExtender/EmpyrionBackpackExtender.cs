@@ -168,7 +168,7 @@ namespace EmpyrionBackpackExtender
 
             var exchange = new ItemExchangeInfo()
             {
-                buttonText  = "close",
+                buttonText  = "close here (do NOT use ESC!!!)",
                 desc        = "",
                 id          = info.playerId,
                 items       = currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items ?? new ItemStack[] { },

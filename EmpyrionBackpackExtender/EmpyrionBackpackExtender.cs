@@ -166,20 +166,40 @@ namespace EmpyrionBackpackExtender
             currentBackpack.Current.OpendBySteamId  = P.steamId;
             currentBackpack.Save();
 
+            Action<ItemExchangeInfo> eventCallback = null;
+            eventCallback = (B) =>
+            {
+                if (P.entityId != B.id) return;
+
+                Event_Player_ItemExchange -= eventCallback;
+                EmpyrionBackpackExtender_Event_Player_ItemExchange(B, P, currentBackpack, config, usedBackpackNo);
+            };
+
+            Event_Player_ItemExchange += eventCallback;
+
             var exchange = new ItemExchangeInfo()
             {
-                buttonText  = "close here (do NOT use ESC!!!)",
+                buttonText  = "close",
                 desc        = "",
                 id          = info.playerId,
                 items       = currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items ?? new ItemStack[] { },
                 title       = $"Backpack ({name}) {(config.MaxBackpacks > 1 ? "#" + currentBackpack.Current.LastUsed : string.Empty)}"
             };
 
-            var result = await Request_Player_ItemExchange(int.MaxValue, exchange);
+            try   { await Request_Player_ItemExchange(0, exchange); } // ignore Timeout Exception
+            catch { }
+        }
 
-            currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items = config.AllowSuperstack ? SuperstackItems(result.items ?? new ItemStack[] { }) : result.items ?? new ItemStack[] { };
-            currentBackpack.Current.OpendByName     = null;
-            currentBackpack.Current.OpendBySteamId  = null;
+        private void EmpyrionBackpackExtender_Event_Player_ItemExchange(
+            ItemExchangeInfo                   bpData, 
+            PlayerInfo                         P, 
+            ConfigurationManager<BackpackData> currentBackpack,
+            BackpackConfiguration              config,
+            int                                usedBackpackNo)
+        {
+            currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items = config.AllowSuperstack ? SuperstackItems(bpData.items ?? new ItemStack[] { }) : bpData.items ?? new ItemStack[] { };
+            currentBackpack.Current.OpendByName = null;
+            currentBackpack.Current.OpendBySteamId = null;
             currentBackpack.Save();
         }
 

@@ -27,9 +27,6 @@ Zusammen mit einem Backslash am Anfang und im Fraktionschat sind die Kommandos a
 * \\vb N = öffnet das N-te persönliche Backpack
 * \\vb buy = kauft ein weiteres persönliches Backpack
 
-ACHTUNG: Bitte den Backbackdialog IMMER mit dem Button "close ..." schießen und NIE mit der Taste ESC. 
-Bei letzterem kann es passieren die die Mod die Änderungen verwirft.
-
 ## Konfiguration
 * ChatCommandPrefix = Zeichen mit dem das Chatkommando beginnen muss
 * Einstellungen für die verschiedenen Backpacktypen
@@ -72,9 +69,6 @@ Together with a backslash at the beginning and in the fractional table, the comm
 * \\vb = opens the last opened personal backpack
 * \\vb N = opens the Nth Personal Backpack
 * \\vb buy = buy another personal backpack
-
-ATTENTION: ALWAYS shoot the backback dialogue with the button "close ..." and NEVER with the button ESC.
-In the latter case it can happen that the mod rejects the changes.
 
 ## Configuration
 * ChatCommandPrefix = Character with which the chat command must start

@@ -7,6 +7,7 @@ using EmpyrionNetAPITools;
 using System.IO;
 using System;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace EmpyrionBackpackExtender
 {
@@ -14,6 +15,7 @@ namespace EmpyrionBackpackExtender
     {
         public ConfigurationManager<BackpackExtenderConfiguration> Configuration { get; set; }
         public ModGameAPI DediAPI { get; private set; }
+        public ConcurrentDictionary<string, DateTime> BackPackLastOpend { get; private set; } = new ConcurrentDictionary<string, DateTime>();
 
         enum ChatType
         {
@@ -112,7 +114,14 @@ namespace EmpyrionBackpackExtender
             if (info.type == (byte)ChatType.Faction) return;
 
             var P = await Request_Player_Info(info.playerId.ToId());
-            ConfigurationManager<BackpackData> currentBackpack = new ConfigurationManager<BackpackData>() {
+
+            if(BackPackLastOpend.TryGetValue($"{P.steamId}{name}", out var time) && (DateTime.Now - time).TotalSeconds <= config.OpenCooldownSecTimer)
+            {
+                MessagePlayer(info.playerId, $"backpack open cooldown please wait {(new TimeSpan(0, 0, config.OpenCooldownSecTimer) - (DateTime.Now - time)).ToString(@"hh\:mm\:ss")}");
+                return;
+            }
+
+            ConfigurationManager <BackpackData> currentBackpack = new ConfigurationManager<BackpackData>() {
                 ConfigFilename = Path.Combine(EmpyrionConfiguration.SaveGameModPath, String.Format(config.FilenamePattern, getConfigFileId(P)))
             };
             currentBackpack.Load();
@@ -176,6 +185,7 @@ namespace EmpyrionBackpackExtender
             };
 
             Event_Player_ItemExchange += eventCallback;
+            BackPackLastOpend.AddOrUpdate($"{P.steamId}{name}", DateTime.Now, (S, D) => DateTime.Now);
 
             var exchange = new ItemExchangeInfo()
             {

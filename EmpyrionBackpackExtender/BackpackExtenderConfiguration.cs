@@ -20,7 +20,7 @@ namespace EmpyrionBackpackExtender
     {
         [JsonConverter(typeof(StringEnumConverter))]
         public LogLevel LogLevel { get; set; } = LogLevel.Message;
-        public string ChatCommandPrefix { get; set; } = "\\";
+        public string ChatCommandPrefix { get; set; } = "/\\";
         public BackpackConfiguration PersonalBackpack { get; set; } = new BackpackConfiguration() {
             MaxBackpacks = 2,
             Price = 500000,

@@ -37,7 +37,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EmpyrionNetAPI, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\EmpyrionNetAPI.4.0.1\lib\net461\EmpyrionNetAPI.dll</HintPath>
+      <HintPath>..\packages\EmpyrionNetAPI.4.0.2\lib\net461\EmpyrionNetAPI.dll</HintPath>
     </Reference>
     <Reference Include="Mif">
       <HintPath>..\dependencies\Mif.dll</HintPath>

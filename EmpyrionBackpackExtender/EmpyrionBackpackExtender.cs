@@ -33,7 +33,7 @@ namespace EmpyrionBackpackExtender
             DediAPI = dediAPI;
             LogLevel = LogLevel.Message;
 
-            log($"**EmpyrionBackpackExtender: loaded");
+            Log($"**EmpyrionBackpackExtender: loaded");
 
             LoadConfiuration();
             LogLevel = Configuration.Current.LogLevel;
@@ -109,7 +109,7 @@ namespace EmpyrionBackpackExtender
 
         private async Task OpenBackpack(ChatInfo info, Dictionary<string, string> args, BackpackConfiguration config, string name, Func<PlayerInfo, string> getConfigFileId)
         {
-            log($"**OpenBackpack {info.type}:{info.msg} {args.Aggregate("", (s, i) => s + i.Key + "/" + i.Value + " ")}");
+            Log($"**OpenBackpack {info.type}:{info.msg} {args.Aggregate("", (s, i) => s + i.Key + "/" + i.Value + " ")}");
 
             if (info.type == (byte)ChatType.Faction) return;
 

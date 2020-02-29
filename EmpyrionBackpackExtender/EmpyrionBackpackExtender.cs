@@ -8,6 +8,7 @@ using System.IO;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using EmpyrionNetAPITools.Extensions;
 
 namespace EmpyrionBackpackExtender
 {
@@ -16,6 +17,7 @@ namespace EmpyrionBackpackExtender
         public ConfigurationManager<BackpackExtenderConfiguration> Configuration { get; set; }
         public ModGameAPI DediAPI { get; private set; }
         public ConcurrentDictionary<string, DateTime> BackPackLastOpend { get; private set; } = new ConcurrentDictionary<string, DateTime>();
+        public FactionInfoList CurrentFactions { get; set; }
 
         enum ChatType
         {
@@ -38,6 +40,8 @@ namespace EmpyrionBackpackExtender
             LoadConfiuration();
             LogLevel = Configuration.Current.LogLevel;
             ChatCommandManager.CommandPrefix = Configuration.Current.ChatCommandPrefix;
+
+            TaskTools.Intervall(60000, () => CurrentFactions = Request_Get_Factions(0.ToId()).Result);
 
             AddCommandsFor(Configuration.Current.PersonalBackpack, "personal",  P => P.steamId);
             AddCommandsFor(Configuration.Current.FactionBackpack,  "faction",   P => P.factionId.ToString());
@@ -170,9 +174,11 @@ namespace EmpyrionBackpackExtender
                 currentBackpack.Current.Backpacks = list.ToArray();
             }
 
-            currentBackpack.Current.LastUsed        = usedBackpackNo;
-            currentBackpack.Current.OpendByName     = P.playerName;
-            currentBackpack.Current.OpendBySteamId  = P.steamId;
+            currentBackpack.Current.LastUsed                = usedBackpackNo;
+            currentBackpack.Current.OpendByName             = P.playerName;
+            currentBackpack.Current.OpendBySteamId          = P.steamId;
+            currentBackpack.Current.LastAccessPlayerName    = P.playerName;
+            currentBackpack.Current.LastAccessFactionName   = CurrentFactions != null ? CurrentFactions.factions.FirstOrDefault(F => F.factionId == P.factionId).abbrev : P.factionId.ToString();
             currentBackpack.Save();
 
             Action<ItemExchangeInfo> eventCallback = null;

@@ -16,6 +16,8 @@ namespace EmpyrionBackpackExtender
         public string OpendBySteamId { get; set; }
         public string OpendByName { get; set; }
         public int LastUsed { get; set; }
+        public string LastAccessPlayerName { get; set; }
+        public string LastAccessFactionName { get; set; }
         public BackpackItems[] Backpacks { get; set; } = new BackpackItems[] { };
     }
 }

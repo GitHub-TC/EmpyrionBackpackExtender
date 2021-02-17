@@ -119,13 +119,14 @@ namespace EmpyrionBackpackExtender
 
             var P = await Request_Player_Info(info.playerId.ToId());
 
-            if(BackPackLastOpend.TryGetValue($"{P.steamId}{name}", out var time) && (DateTime.Now - time).TotalSeconds <= config.OpenCooldownSecTimer)
+            if (BackPackLastOpend.TryGetValue($"{P.steamId}{name}", out var time) && (DateTime.Now - time).TotalSeconds <= config.OpenCooldownSecTimer)
             {
                 MessagePlayer(info.playerId, $"backpack open cooldown please wait {(new TimeSpan(0, 0, config.OpenCooldownSecTimer) - (DateTime.Now - time)).ToString(@"hh\:mm\:ss")}");
                 return;
             }
 
-            ConfigurationManager <BackpackData> currentBackpack = new ConfigurationManager<BackpackData>() {
+            ConfigurationManager<BackpackData> currentBackpack = new ConfigurationManager<BackpackData>()
+            {
                 ConfigFilename = Path.Combine(EmpyrionConfiguration.SaveGameModPath, String.Format(config.FilenamePattern, getConfigFileId(P)))
             };
             currentBackpack.Load();
@@ -139,7 +140,7 @@ namespace EmpyrionBackpackExtender
                 return;
             }
 
-            if(config.ForbiddenPlayfields.Length > 0 && config.ForbiddenPlayfields.Contains(P.playfield))
+            if (config.ForbiddenPlayfields.Length > 0 && config.ForbiddenPlayfields.Contains(P.playfield))
             {
                 MessagePlayer(info.playerId, $"backpacks are not allowed on this playfield");
                 return;
@@ -152,7 +153,7 @@ namespace EmpyrionBackpackExtender
             }
 
             int usedBackpackNo = currentBackpack.Current.LastUsed;
-            if(args.TryGetValue("number", out string numberArgs)) int.TryParse(numberArgs, out usedBackpackNo);
+            if (args.TryGetValue("number", out string numberArgs)) int.TryParse(numberArgs, out usedBackpackNo);
             usedBackpackNo = Math.Max(1, usedBackpackNo);
 
             if (usedBackpackNo > config.MaxBackpacks)
@@ -174,41 +175,59 @@ namespace EmpyrionBackpackExtender
                 currentBackpack.Current.Backpacks = list.ToArray();
             }
 
-            currentBackpack.Current.LastUsed                = usedBackpackNo;
-            currentBackpack.Current.OpendByName             = P.playerName;
-            currentBackpack.Current.OpendBySteamId          = P.steamId;
-            currentBackpack.Current.LastAccessPlayerName    = P.playerName;
-            currentBackpack.Current.LastAccessFactionName   = CurrentFactions != null ? CurrentFactions.factions.FirstOrDefault(F => F.factionId == P.factionId).abbrev : P.factionId.ToString();
+            currentBackpack.Current.LastUsed = usedBackpackNo;
+            currentBackpack.Current.OpendByName = P.playerName;
+            currentBackpack.Current.OpendBySteamId = P.steamId;
+            currentBackpack.Current.LastAccessPlayerName = P.playerName;
+            currentBackpack.Current.LastAccessFactionName = CurrentFactions != null ? CurrentFactions.factions.FirstOrDefault(F => F.factionId == P.factionId).abbrev : P.factionId.ToString();
             currentBackpack.Save();
 
             Action<ItemExchangeInfo> eventCallback = null;
             eventCallback = (B) =>
             {
                 if (P.entityId != B.id) return;
-
-                Event_Player_ItemExchange -= eventCallback;
-                EmpyrionBackpackExtender_Event_Player_ItemExchange(B, P, currentBackpack, config, usedBackpackNo);
+                
+                if (ContainsForbiddenItemStacks(config, B.items, out var errorMsg)) OpenBackpackItemExcange(info.playerId, config, name, "Not allowed:" + errorMsg, currentBackpack, B.items).GetAwaiter().GetResult();
+                else
+                {
+                    Event_Player_ItemExchange -= eventCallback;
+                    EmpyrionBackpackExtender_Event_Player_ItemExchange(B, currentBackpack, config, usedBackpackNo);
+                }
             };
 
             Event_Player_ItemExchange += eventCallback;
             BackPackLastOpend.AddOrUpdate($"{P.steamId}{name}", DateTime.Now, (S, D) => DateTime.Now);
 
+            await OpenBackpackItemExcange(info.playerId, config, name, "", currentBackpack, currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items);
+        }
+
+        private bool ContainsForbiddenItemStacks(BackpackConfiguration config, ItemStack[] items, out string errorMsg)
+        {
+            errorMsg = null;
+            if (config.ForbiddenItems == null) return false;
+
+            errorMsg = config.ForbiddenItems?.Aggregate("", (msg, I) => items.Any(i => i.id == I.Id && i.count > I.Count) ? msg + $"({I.ItemName} > {I.Count}) " : msg);
+
+            return !string.IsNullOrEmpty(errorMsg);
+        }
+
+        private async Task OpenBackpackItemExcange(int playerId, BackpackConfiguration config, string name, string description, ConfigurationManager<BackpackData> currentBackpack, ItemStack[] items)
+        {
             var exchange = new ItemExchangeInfo()
             {
                 buttonText  = "close",
-                desc        = "",
-                id          = info.playerId,
-                items       = currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items ?? new ItemStack[] { },
+                desc        = description,
+                id          = playerId,
+                items       = items ?? new ItemStack[] { },
                 title       = $"Backpack ({name}) {(config.MaxBackpacks > 1 ? "#" + currentBackpack.Current.LastUsed : string.Empty)}"
             };
 
-            try   { await Request_Player_ItemExchange(0, exchange); } // ignore Timeout Exception
+            try { await Request_Player_ItemExchange(0, exchange); } // ignore Timeout Exception
             catch { }
         }
 
         private void EmpyrionBackpackExtender_Event_Player_ItemExchange(
             ItemExchangeInfo                   bpData, 
-            PlayerInfo                         P, 
             ConfigurationManager<BackpackData> currentBackpack,
             BackpackConfiguration              config,
             int                                usedBackpackNo)
@@ -251,7 +270,8 @@ namespace EmpyrionBackpackExtender
                 $"max allowed {name} backpacks: {config.MaxBackpacks}\n" +
                 (config.Price > 0 ? $"price per {name} backpack: {config.Price}\nyou have {currentBackpackLength} {name} backpack(s)\n" : "") +
                 PlayfieldList("\nallowed playfields:",   config.AllowedPlayfields) +
-                PlayfieldList("\nforbidden playfields:", config.ForbiddenPlayfields)
+                PlayfieldList("\nforbidden playfields:", config.ForbiddenPlayfields) +
+                $"\nnot allowed:{config.ForbiddenItems?.Aggregate("", (s, i) => s + $" ({i.ItemName} > {i.Count})")}"
             );
         }
 

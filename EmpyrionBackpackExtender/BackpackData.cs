@@ -1,15 +1,17 @@
-﻿using Eleon.Modding;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace EmpyrionBackpackExtender
+﻿namespace EmpyrionBackpackExtender
 {
+    public class ItemNameStack
+    {
+        public int id;
+        public string name;
+        public int count;
+        public byte slotIdx;
+        public int ammo;
+        public int decay;
+    }
     public class BackpackItems
     {
-        public ItemStack[] Items { get; set; }
+        public ItemNameStack[] Items { get; set; }
     }
     public class BackpackData
     {

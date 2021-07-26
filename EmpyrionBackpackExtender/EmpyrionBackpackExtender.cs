@@ -19,6 +19,54 @@ namespace EmpyrionBackpackExtender
         public ConcurrentDictionary<string, DateTime> BackPackLastOpend { get; private set; } = new ConcurrentDictionary<string, DateTime>();
         public FactionInfoList CurrentFactions { get; set; }
 
+        public static IReadOnlyDictionary<string, int> BlockNameIdMapping
+        {
+            get {
+                if (_BlockNameIdMapping == null)
+                    try { _BlockNameIdMapping = ReadBlockMapping(Path.Combine(EmpyrionConfiguration.SaveGamePath, @"blocksmap.dat")); }
+                    catch (Exception error) { Console.WriteLine(error); }
+
+                return _BlockNameIdMapping;
+            }
+        }
+        static IReadOnlyDictionary<string, int> _BlockNameIdMapping;
+
+        public static IReadOnlyDictionary<int, string> BlockIdNameMapping
+        {
+            get {
+                if (_BlockIdNameMapping == null)
+                    try { _BlockIdNameMapping = BlockNameIdMapping.ToDictionary(b => b.Value, b => b.Key); }
+                    catch (Exception error) { Console.WriteLine(error); }
+
+                return _BlockIdNameMapping;
+            }
+        }
+        static IReadOnlyDictionary<int, string> _BlockIdNameMapping;
+
+        public static IReadOnlyDictionary<string, int> ReadBlockMapping(string filename)
+        {
+            if (!File.Exists(filename)) return null;
+
+            var result = new ConcurrentDictionary<string, int>();
+
+            var fileContent = File.ReadAllBytes(filename);
+            for (var currentOffset = 9; currentOffset < fileContent.Length;)
+            {
+                var len = fileContent[currentOffset++];
+                var name = System.Text.Encoding.ASCII.GetString(fileContent, currentOffset, len);
+                currentOffset += len;
+
+                var id = fileContent[currentOffset++] | fileContent[currentOffset++] << 8;
+
+                result.AddOrUpdate(name, id, (s, i) => id);
+            }
+
+            return result;
+        }
+
+
+
+
         enum ChatType
         {
             Faction = 3,
@@ -171,7 +219,7 @@ namespace EmpyrionBackpackExtender
                 }
 
                 var list = currentBackpack.Current.Backpacks?.ToList() ?? new List<BackpackItems>();
-                for (int i = list.Count; i < usedBackpackNo; i++) list.Add(new BackpackItems() { Items = new ItemStack[] { } });
+                for (int i = list.Count; i < usedBackpackNo; i++) list.Add(new BackpackItems() { Items = new ItemNameStack[] { } });
                 currentBackpack.Current.Backpacks = list.ToArray();
             }
 
@@ -198,7 +246,31 @@ namespace EmpyrionBackpackExtender
             Event_Player_ItemExchange += eventCallback;
             BackPackLastOpend.AddOrUpdate($"{P.steamId}{name}", DateTime.Now, (S, D) => DateTime.Now);
 
-            await OpenBackpackItemExcange(info.playerId, config, name, "", currentBackpack, currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items);
+            await OpenBackpackItemExcange(info.playerId, config, name, "", currentBackpack, currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items.Select(i => Convert(i)).ToArray());
+        }
+
+        private ItemStack Convert(ItemNameStack i)
+        {
+            int id = i.id;
+            return new ItemStack(i.name == null ? i.id : BlockNameIdMapping?.TryGetValue(i.name, out id) == true ? id : i.id, i.count)
+            {
+                ammo    = i.ammo,
+                decay   = i.decay,
+                slotIdx = i.slotIdx
+            };
+        }
+
+        private ItemNameStack Convert(ItemStack i)
+        {
+            string name = null;
+            return new ItemNameStack{
+                id      = i.id,
+                name    = BlockIdNameMapping?.TryGetValue(i.id, out name) == true ? name : null,
+                count   = i.count,
+                ammo    = i.ammo,
+                decay   = i.decay,
+                slotIdx = i.slotIdx
+            };
         }
 
         private bool ContainsForbiddenItemStacks(BackpackConfiguration config, ItemStack[] items, out string errorMsg)
@@ -206,7 +278,7 @@ namespace EmpyrionBackpackExtender
             errorMsg = null;
             if (config.ForbiddenItems == null) return false;
 
-            errorMsg = config.ForbiddenItems?.Aggregate("", (msg, I) => items.Any(i => i.id == I.Id && i.count > I.Count) ? msg + $"({I.ItemName} > {I.Count}) " : msg);
+            errorMsg = config.ForbiddenItems?.Aggregate("", (msg, I) => items?.Any(i => i.id == I.Id && i.count > I.Count) == true ? msg + $"({I.ItemName} > {I.Count}) " : msg);
 
             return !string.IsNullOrEmpty(errorMsg);
         }
@@ -232,19 +304,19 @@ namespace EmpyrionBackpackExtender
             BackpackConfiguration              config,
             int                                usedBackpackNo)
         {
-            currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items = config.AllowSuperstack ? SuperstackItems(bpData.items ?? new ItemStack[] { }) : bpData.items ?? new ItemStack[] { };
+            currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items = config.AllowSuperstack ? SuperstackItems(bpData.items?.Select(i => Convert(i)).ToArray() ?? new ItemNameStack[] { }) : bpData.items?.Select(i => Convert(i)).ToArray() ?? new ItemNameStack[] { };
             currentBackpack.Current.OpendByName = null;
             currentBackpack.Current.OpendBySteamId = null;
             currentBackpack.Save();
         }
 
-        private ItemStack[] SuperstackItems(ItemStack[] itemStack)
+        private ItemNameStack[] SuperstackItems(ItemNameStack[] itemStack)
         {
-            var result = new Dictionary<int, ItemStack>();
+            var result = new Dictionary<int, ItemNameStack>();
             Array.ForEach(itemStack,
                 I => {
-                    if (result.TryGetValue(I.id, out ItemStack found)) result[I.id] = new ItemStack(I.id, result[I.id].count + I.count);
-                    else                                               result.Add(I.id, I);
+                    if (result.TryGetValue(I.id, out ItemNameStack found)) result[I.id] = Convert(new ItemStack(I.id, result[I.id].count + I.count));
+                    else                                                   result.Add(I.id, I);
                 });
 
             return result.Values.ToArray();

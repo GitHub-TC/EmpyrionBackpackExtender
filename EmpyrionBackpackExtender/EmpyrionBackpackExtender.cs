@@ -9,6 +9,7 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using EmpyrionNetAPITools.Extensions;
+using Newtonsoft.Json;
 
 namespace EmpyrionBackpackExtender
 {
@@ -19,19 +20,19 @@ namespace EmpyrionBackpackExtender
         public ConcurrentDictionary<string, DateTime> BackPackLastOpend { get; private set; } = new ConcurrentDictionary<string, DateTime>();
         public FactionInfoList CurrentFactions { get; set; }
 
-        public static IReadOnlyDictionary<string, int> BlockNameIdMapping
+        public IReadOnlyDictionary<string, int> BlockNameIdMapping
         {
             get {
-                if (_BlockNameIdMapping == null)
-                    try { _BlockNameIdMapping = ReadBlockMapping(Path.Combine(EmpyrionConfiguration.SaveGamePath, @"blocksmap.dat")); }
+                if (_BlockNameIdMapping == null && File.Exists(Configuration.Current.NameIdMappingFile ?? string.Empty))
+                    try{ _BlockNameIdMapping = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(Configuration.Current.NameIdMappingFile)); }
                     catch (Exception error) { Console.WriteLine(error); }
 
                 return _BlockNameIdMapping;
             }
         }
-        static IReadOnlyDictionary<string, int> _BlockNameIdMapping;
+        IReadOnlyDictionary<string, int> _BlockNameIdMapping;
 
-        public static IReadOnlyDictionary<int, string> BlockIdNameMapping
+        public IReadOnlyDictionary<int, string> BlockIdNameMapping
         {
             get {
                 if (_BlockIdNameMapping == null)
@@ -41,7 +42,7 @@ namespace EmpyrionBackpackExtender
                 return _BlockIdNameMapping;
             }
         }
-        static IReadOnlyDictionary<int, string> _BlockIdNameMapping;
+         IReadOnlyDictionary<int, string> _BlockIdNameMapping;
 
         public static IReadOnlyDictionary<string, int> ReadBlockMapping(string filename)
         {

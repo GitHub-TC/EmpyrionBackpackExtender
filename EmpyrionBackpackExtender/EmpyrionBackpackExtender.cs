@@ -161,92 +161,95 @@ namespace EmpyrionBackpackExtender
 
         private async Task OpenBackpack(ChatInfo info, Dictionary<string, string> args, BackpackConfiguration config, string name, Func<PlayerInfo, string> getConfigFileId)
         {
-            Log($"**OpenBackpack {info.type}:{info.msg} {args.Aggregate("", (s, i) => s + i.Key + "/" + i.Value + " ")}");
+            try { 
+                Log($"**OpenBackpack {info.type}:{info.msg} {args.Aggregate("", (s, i) => s + i.Key + "/" + i.Value + " ")}");
 
-            if (info.type == (byte)ChatType.Faction) return;
+                if (info.type == (byte)ChatType.Faction) return;
 
-            var P = await Request_Player_Info(info.playerId.ToId());
+                var P = await Request_Player_Info(info.playerId.ToId());
 
-            if (BackPackLastOpend.TryGetValue($"{P.steamId}{name}", out var time) && (DateTime.Now - time).TotalSeconds <= config.OpenCooldownSecTimer)
-            {
-                MessagePlayer(info.playerId, $"backpack open cooldown please wait {(new TimeSpan(0, 0, config.OpenCooldownSecTimer) - (DateTime.Now - time)).ToString(@"hh\:mm\:ss")}");
-                return;
-            }
-
-            ConfigurationManager<BackpackData> currentBackpack = new ConfigurationManager<BackpackData>()
-            {
-                ConfigFilename = Path.Combine(EmpyrionConfiguration.SaveGameModPath, String.Format(config.FilenamePattern, getConfigFileId(P)))
-            };
-            currentBackpack.Load();
-
-            if (!string.IsNullOrEmpty(currentBackpack.Current.OpendBySteamId) &&
-                currentBackpack.Current.OpendBySteamId != P.steamId)
-            {
-                var onlinePlayers = await Request_Player_List();
-
-                MessagePlayer(info.playerId, $"backpack currently opend by {currentBackpack.Current.OpendByName}");
-                return;
-            }
-
-            if (config.ForbiddenPlayfields.Length > 0 && config.ForbiddenPlayfields.Contains(P.playfield))
-            {
-                MessagePlayer(info.playerId, $"backpacks are not allowed on this playfield");
-                return;
-            }
-
-            if (config.AllowedPlayfields.Length > 0 && !config.AllowedPlayfields.Contains(P.playfield))
-            {
-                MessagePlayer(info.playerId, $"backpacks are not allowed on this playfield");
-                return;
-            }
-
-            int usedBackpackNo = currentBackpack.Current.LastUsed;
-            if (args.TryGetValue("number", out string numberArgs)) int.TryParse(numberArgs, out usedBackpackNo);
-            usedBackpackNo = Math.Max(1, usedBackpackNo);
-
-            if (usedBackpackNo > config.MaxBackpacks)
-            {
-                MessagePlayer(info.playerId, $"max allowed backpacks #{config.MaxBackpacks}");
-                return;
-            }
-
-            if (currentBackpack.Current.Backpacks.Length < usedBackpackNo)
-            {
-                if (config.Price > 0)
+                if (BackPackLastOpend.TryGetValue($"{P.steamId}{name}", out var time) && (DateTime.Now - time).TotalSeconds <= config.OpenCooldownSecTimer)
                 {
-                    MessagePlayer(info.playerId, $"you have only {currentBackpack.Current.Backpacks.Length} backpack(s) please buy one");
+                    MessagePlayer(info.playerId, $"backpack open cooldown please wait {(new TimeSpan(0, 0, config.OpenCooldownSecTimer) - (DateTime.Now - time)).ToString(@"hh\:mm\:ss")}");
                     return;
                 }
 
-                var list = currentBackpack.Current.Backpacks?.ToList() ?? new List<BackpackItems>();
-                for (int i = list.Count; i < usedBackpackNo; i++) list.Add(new BackpackItems() { Items = new ItemNameStack[] { } });
-                currentBackpack.Current.Backpacks = list.ToArray();
-            }
-
-            currentBackpack.Current.LastUsed = usedBackpackNo;
-            currentBackpack.Current.OpendByName = P.playerName;
-            currentBackpack.Current.OpendBySteamId = P.steamId;
-            currentBackpack.Current.LastAccessPlayerName = P.playerName;
-            currentBackpack.Current.LastAccessFactionName = CurrentFactions != null ? CurrentFactions.factions.FirstOrDefault(F => F.factionId == P.factionId).abbrev : P.factionId.ToString();
-            currentBackpack.Save();
-
-            Action<ItemExchangeInfo> eventCallback = null;
-            eventCallback = (B) =>
-            {
-                if (P.entityId != B.id) return;
-                
-                if (ContainsForbiddenItemStacks(config, B.items, out var errorMsg)) OpenBackpackItemExcange(info.playerId, config, name, "Not allowed:" + errorMsg, currentBackpack, B.items).GetAwaiter().GetResult();
-                else
+                ConfigurationManager<BackpackData> currentBackpack = new ConfigurationManager<BackpackData>()
                 {
-                    Event_Player_ItemExchange -= eventCallback;
-                    EmpyrionBackpackExtender_Event_Player_ItemExchange(B, currentBackpack, config, usedBackpackNo);
+                    ConfigFilename = Path.Combine(EmpyrionConfiguration.SaveGameModPath, String.Format(config.FilenamePattern, getConfigFileId(P)))
+                };
+                currentBackpack.Load();
+
+                if (!string.IsNullOrEmpty(currentBackpack.Current.OpendBySteamId) &&
+                    currentBackpack.Current.OpendBySteamId != P.steamId)
+                {
+                    var onlinePlayers = await Request_Player_List();
+
+                    MessagePlayer(info.playerId, $"backpack currently opend by {currentBackpack.Current.OpendByName}");
+                    return;
                 }
-            };
 
-            Event_Player_ItemExchange += eventCallback;
-            BackPackLastOpend.AddOrUpdate($"{P.steamId}{name}", DateTime.Now, (S, D) => DateTime.Now);
+                if (config.ForbiddenPlayfields.Length > 0 && config.ForbiddenPlayfields.Contains(P.playfield))
+                {
+                    MessagePlayer(info.playerId, $"backpacks are not allowed on this playfield");
+                    return;
+                }
 
-            await OpenBackpackItemExcange(info.playerId, config, name, "", currentBackpack, currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items.Select(i => Convert(i)).ToArray());
+                if (config.AllowedPlayfields.Length > 0 && !config.AllowedPlayfields.Contains(P.playfield))
+                {
+                    MessagePlayer(info.playerId, $"backpacks are not allowed on this playfield");
+                    return;
+                }
+
+                int usedBackpackNo = currentBackpack.Current.LastUsed;
+                if (args.TryGetValue("number", out string numberArgs)) int.TryParse(numberArgs, out usedBackpackNo);
+                usedBackpackNo = Math.Max(1, usedBackpackNo);
+
+                if (usedBackpackNo > config.MaxBackpacks)
+                {
+                    MessagePlayer(info.playerId, $"max allowed backpacks #{config.MaxBackpacks}");
+                    return;
+                }
+
+                if (currentBackpack.Current.Backpacks.Length < usedBackpackNo)
+                {
+                    if (config.Price > 0)
+                    {
+                        MessagePlayer(info.playerId, $"you have only {currentBackpack.Current.Backpacks.Length} backpack(s) please buy one");
+                        return;
+                    }
+
+                    var list = currentBackpack.Current.Backpacks?.ToList() ?? new List<BackpackItems>();
+                    for (int i = list.Count; i < usedBackpackNo; i++) list.Add(new BackpackItems() { Items = new ItemNameStack[] { } });
+                    currentBackpack.Current.Backpacks = list.ToArray();
+                }
+
+                currentBackpack.Current.LastUsed                = usedBackpackNo;
+                currentBackpack.Current.OpendByName             = P.playerName;
+                currentBackpack.Current.OpendBySteamId          = P.steamId;
+                currentBackpack.Current.LastAccessPlayerName    = P.playerName;
+                currentBackpack.Current.LastAccessFactionName   = CurrentFactions != null && CurrentFactions.factions != null ? CurrentFactions.factions.FirstOrDefault(F => F.factionId == P.factionId).abbrev : P.factionId.ToString();
+                currentBackpack.Save();
+
+                Action<ItemExchangeInfo> eventCallback = null;
+                eventCallback = (B) =>
+                {
+                    if (P.entityId != B.id) return;
+                
+                    if (ContainsForbiddenItemStacks(config, B.items, out var errorMsg)) OpenBackpackItemExcange(info.playerId, config, name, "Not allowed:" + errorMsg, currentBackpack, B.items).GetAwaiter().GetResult();
+                    else
+                    {
+                        Event_Player_ItemExchange -= eventCallback;
+                        EmpyrionBackpackExtender_Event_Player_ItemExchange(B, currentBackpack, config, usedBackpackNo);
+                    }
+                };
+
+                Event_Player_ItemExchange += eventCallback;
+                BackPackLastOpend.AddOrUpdate($"{P.steamId}{name}", DateTime.Now, (S, D) => DateTime.Now);
+
+                await OpenBackpackItemExcange(info.playerId, config, name, "", currentBackpack, currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items?.Select(i => Convert(i)).ToArray() ?? new ItemStack[] { });
+            }
+            catch (Exception error) { MessagePlayer(info.playerId, $"backpack open failed {error}"); }
         }
 
         private ItemStack Convert(ItemNameStack i)
@@ -294,8 +297,8 @@ namespace EmpyrionBackpackExtender
                 title       = $"Backpack ({name}) {(config.MaxBackpacks > 1 ? "#" + currentBackpack.Current.LastUsed : string.Empty)}"
             };
 
-            try { await Request_Player_ItemExchange(0, exchange); } // ignore Timeout Exception
-            catch { }
+            try { await Request_Player_ItemExchange(Timeouts.NoResponse, exchange); } // ignore Timeout Exception
+            catch (Exception error) { MessagePlayer(playerId, $"backpack open failed {error}");}
         }
 
         private void EmpyrionBackpackExtender_Event_Player_ItemExchange(

@@ -24,8 +24,9 @@ namespace EmpyrionBackpackExtender
         {
             get {
                 if (_BlockNameIdMapping == null && File.Exists(Configuration.Current.NameIdMappingFile ?? string.Empty))
+                    Log($"NameIdMapping:'{Configuration.Current.NameIdMappingFile}' CurrentDirectory:{Directory.GetCurrentDirectory()}", LogLevel.Message);
                     try{ _BlockNameIdMapping = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(Configuration.Current.NameIdMappingFile)); }
-                    catch (Exception error) { Console.WriteLine(error); }
+                    catch (Exception error) { Log($"NameIdMapping read failed:{error}", LogLevel.Error); }
 
                 return _BlockNameIdMapping;
             }
@@ -162,12 +163,14 @@ namespace EmpyrionBackpackExtender
 
         private async Task OpenBackpack(ChatInfo info, Dictionary<string, string> args, BackpackConfiguration config, string name, Func<PlayerInfo, string> getConfigFileId)
         {
+            string playerName = null;
             try { 
                 Log($"**OpenBackpack {info.type}:{info.msg} {args.Aggregate("", (s, i) => s + i.Key + "/" + i.Value + " ")}");
 
                 if (info.type == (byte)ChatType.Faction) return;
 
                 var P = await Request_Player_Info(info.playerId.ToId());
+                playerName = P.playerName;
 
                 if (BackPackLastOpend.TryGetValue($"{P.steamId}{name}", out var time) && (DateTime.Now - time).TotalSeconds <= config.OpenCooldownSecTimer)
                 {
@@ -250,7 +253,10 @@ namespace EmpyrionBackpackExtender
 
                 await OpenBackpackItemExcange(info.playerId, config, name, "", currentBackpack, currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items?.Select(i => Convert(i)).ToArray() ?? new ItemStack[] { });
             }
-            catch (Exception error) { MessagePlayer(info.playerId, $"backpack open failed {error}"); }
+            catch (Exception error) {
+                Log($"backpack open failed for player '{playerName}'/{info.playerId} :{error}", LogLevel.Error);
+                MessagePlayer(info.playerId, $"backpack open failed {error}"); 
+            }
         }
 
         private ItemStack Convert(ItemNameStack i)
@@ -299,7 +305,10 @@ namespace EmpyrionBackpackExtender
             };
 
             try { await Request_Player_ItemExchange(Timeouts.NoResponse, exchange); } // ignore Timeout Exception
-            catch (Exception error) { MessagePlayer(playerId, $"backpack open failed {error}");}
+            catch (Exception error) {
+                Log($"backpack open failed for player {playerId} :{error}", LogLevel.Error);
+                MessagePlayer(playerId, $"backpack open failed {error}");
+            }
         }
 
         private void EmpyrionBackpackExtender_Event_Player_ItemExchange(

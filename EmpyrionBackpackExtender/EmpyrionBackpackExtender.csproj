@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>EmpyrionBackpackExtender</RootNamespace>
     <AssemblyName>EmpyrionBackpackExtender</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
@@ -36,20 +36,20 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EmpyrionNetApi, Version=5.6.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\EmpyrionNetAPI.5.6.0\lib\net461\EmpyrionNetApi.dll</HintPath>
+    <Reference Include="EmpyrionNetApi, Version=5.7.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\EmpyrionNetAPI.5.7.0\lib\net48\EmpyrionNetApi.dll</HintPath>
     </Reference>
-    <Reference Include="EmpyrionNetApiBroker, Version=1.0.1.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\EmpyrionNetAPI.5.6.0\lib\net461\EmpyrionNetApiBroker.dll</HintPath>
+    <Reference Include="EmpyrionNetApiBroker, Version=1.0.2.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\EmpyrionNetAPI.5.7.0\lib\net48\EmpyrionNetApiBroker.dll</HintPath>
     </Reference>
-    <Reference Include="EmpyrionNetApiDefinitions, Version=5.0.6.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\EmpyrionNetAPI.5.6.0\lib\net461\EmpyrionNetApiDefinitions.dll</HintPath>
+    <Reference Include="EmpyrionNetApiDefinitions, Version=5.0.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\EmpyrionNetAPI.5.7.0\lib\net48\EmpyrionNetApiDefinitions.dll</HintPath>
     </Reference>
-    <Reference Include="EmpyrionNetApiModBase, Version=1.0.1.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\EmpyrionNetAPI.5.6.0\lib\net461\EmpyrionNetApiModBase.dll</HintPath>
+    <Reference Include="EmpyrionNetApiModBase, Version=1.0.2.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\EmpyrionNetAPI.5.7.0\lib\net48\EmpyrionNetApiModBase.dll</HintPath>
     </Reference>
-    <Reference Include="EmpyrionNetApiTools, Version=5.0.5.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\EmpyrionNetAPI.5.6.0\lib\net461\EmpyrionNetApiTools.dll</HintPath>
+    <Reference Include="EmpyrionNetApiTools, Version=5.0.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\EmpyrionNetAPI.5.7.0\lib\net48\EmpyrionNetApiTools.dll</HintPath>
     </Reference>
     <Reference Include="Mif">
       <HintPath>..\dependencies\Mif.dll</HintPath>

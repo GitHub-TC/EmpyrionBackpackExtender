@@ -39,6 +39,7 @@ Zusammen mit einem Backslash am Anfang und im Fraktionschat sind die Kommandos a
   * ForbiddenPlayfields = Liste der Playfields auf denen das Backpack verboten ist
   * FilenamePattern = Speicherort und Dateiname der Backpacks
   * ForbiddenItems = { Id: 1234, Count:MaxAllowed, ItemName:"Description for Player" }
+  * AllowedItems = { Id: 1234, Count:MaxAllowed, ItemName:"Description for Player" }
 
   Hinweis: Bei den Einschränkungen auf bestimmte Playfields braucht nur der jeweilig "einfacherer" Eintrag gefüllt zu werden
 
@@ -84,5 +85,6 @@ Together with a backslash at the beginning and in the fractional table, the comm
   * ForbiddenPlayfields = List of playfields on which the backpack is prohibited
   * FilenamePattern = Location and filename of the backpacks
   * ForbiddenItems = { Id: 1234, Count:MaxAllowed, ItemName:"Description for Player" }
+  * AllowedItems = { Id: 1234, Count:MaxAllowed, ItemName:"Description for Player" }
 
   Note: With the restrictions on certain Playfields only the respective "simpler" entry needs to be filled

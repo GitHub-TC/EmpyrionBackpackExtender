@@ -4,7 +4,7 @@ using Newtonsoft.Json.Converters;
 
 namespace EmpyrionBackpackExtender
 {
-    public class ForbiddenItemData
+    public class ItemData
     {
         public int Id { get; set; }
         public int Count { get; set; }
@@ -20,7 +20,8 @@ namespace EmpyrionBackpackExtender
         public string[] AllowedPlayfields { get; set; } = new string[] { };
         public string[] ForbiddenPlayfields { get; set; } = new string[] { };
         public string FilenamePattern { get; set; }
-        public ForbiddenItemData[] ForbiddenItems { get; set; } = new ForbiddenItemData[] { new ForbiddenItemData() };
+        public ItemData[] ForbiddenItems { get; set; } = new ItemData[] { new ItemData() };
+        public ItemData[] AllowedItems { get; set; } = new ItemData[] { };
     }
 
     public class BackpackExtenderConfiguration

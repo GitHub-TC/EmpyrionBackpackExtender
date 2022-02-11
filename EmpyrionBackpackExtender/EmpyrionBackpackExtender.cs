@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using EmpyrionNetAPITools.Extensions;
 using Newtonsoft.Json;
+using System.Xml.Linq;
 
 namespace EmpyrionBackpackExtender
 {
@@ -239,12 +240,15 @@ namespace EmpyrionBackpackExtender
                 eventCallback = (B) =>
                 {
                     if (P.entityId != B.id) return;
-                
-                    if (ContainsForbiddenItemStacks(config, B.items, out var errorMsg)) OpenBackpackItemExcange(info.playerId, config, name, "Not allowed:" + errorMsg, currentBackpack, B.items).GetAwaiter().GetResult();
-                    else
+
+                    if (ItemStacksOk(config, B.items, out var errorMsg))
                     {
                         Event_Player_ItemExchange -= eventCallback;
                         EmpyrionBackpackExtender_Event_Player_ItemExchange(B, currentBackpack, config, usedBackpackNo);
+                    }
+                    else
+                    {
+                        OpenBackpackItemExcange(info.playerId, config, name, $"Not allowed:{errorMsg}", currentBackpack, B.items).GetAwaiter().GetResult();
                     }
                 };
 
@@ -283,16 +287,22 @@ namespace EmpyrionBackpackExtender
             };
         }
 
-        private bool ContainsForbiddenItemStacks(BackpackConfiguration config, ItemStack[] items, out string errorMsg)
+        private bool ItemStacksOk(BackpackConfiguration config, ItemStack[] items, out string errorMsg)
         {
-            errorMsg = null;
-            if (config.ForbiddenItems == null) return false;
+            errorMsg = string.Empty;
+            if(items == null) return true;
 
-            errorMsg = config.ForbiddenItems?.Aggregate("", (msg, I) => items?.Any(i => i.id == I.Id && i.count > I.Count) == true ? msg + $"({I.ItemName} > {I.Count}) " : msg);
+            var flattenItems = new Dictionary<int, int>();
+            items.ToList().ForEach(item => {
+                if(flattenItems.TryGetValue(item.id, out int count)) flattenItems[item.id] += item.count;
+                else                                                 flattenItems.Add(item.id, item.count);
+            });
 
-            return !string.IsNullOrEmpty(errorMsg);
+            if (config.ForbiddenItems != null && config.ForbiddenItems.Length > 0) errorMsg = config.ForbiddenItems?.Aggregate(errorMsg, (msg, I) => flattenItems.       Any(i => i.Key == I.Id && i.Value  > I.Count) ? msg + $"({I.ItemName} > {I.Count}) " : msg);
+            if (config.AllowedItems   != null && config.AllowedItems  .Length > 0) errorMsg = flattenItems          .Aggregate(errorMsg, (msg, I) => config.AllowedItems.Any(i => I.Key == i.Id && I.Value <= i.Count) ? msg : msg + $"({(BlockIdNameMapping?.TryGetValue(I.Key, out var name) == true ? $"{name} [{I.Key}]" : I.Key.ToString())} > {config.AllowedItems.FirstOrDefault(i => i.Id == I.Key)?.Count ?? 0}) ");
+            
+            return string.IsNullOrEmpty(errorMsg);
         }
-
         private async Task OpenBackpackItemExcange(int playerId, BackpackConfiguration config, string name, string description, ConfigurationManager<BackpackData> currentBackpack, ItemStack[] items)
         {
             var exchange = new ItemExchangeInfo()
@@ -356,7 +366,8 @@ namespace EmpyrionBackpackExtender
                 (config.Price > 0 ? $"price per {name} backpack: {config.Price}\nyou have {currentBackpackLength} {name} backpack(s)\n" : "") +
                 PlayfieldList("\nallowed playfields:",   config.AllowedPlayfields) +
                 PlayfieldList("\nforbidden playfields:", config.ForbiddenPlayfields) +
-                $"\nnot allowed:{config.ForbiddenItems?.Aggregate("", (s, i) => s + $" ({i.ItemName} > {i.Count})")}"
+                (config.ForbiddenItems != null && config.ForbiddenItems.Length > 0 ? $"\nnot allowed:{config.ForbiddenItems?.Aggregate("", (s, i) => s + $" ({i.ItemName} > {i.Count})")}" : "") +
+                (config.AllowedItems   != null && config.AllowedItems  .Length > 0 ? $"\nonly allowed:{config.AllowedItems?.Aggregate("", (s, i) => s + $" ({i.ItemName} <= {i.Count})")}" : "")
             );
         }
 

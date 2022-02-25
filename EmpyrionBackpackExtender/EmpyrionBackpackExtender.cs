@@ -237,9 +237,16 @@ namespace EmpyrionBackpackExtender
                 currentBackpack.Save();
 
                 Action<ItemExchangeInfo> eventCallback = null;
+                bool isBackpackOpenOkResult = true;
                 eventCallback = (B) =>
                 {
                     if (P.entityId != B.id) return;
+                    
+                    if(isBackpackOpenOkResult)
+                    {
+                        isBackpackOpenOkResult = false;
+                        return;
+                    }
 
                     if (ItemStacksOk(config, B.items, out var errorMsg))
                     {
@@ -248,6 +255,7 @@ namespace EmpyrionBackpackExtender
                     }
                     else
                     {
+                        isBackpackOpenOkResult = true;
                         OpenBackpackItemExcange(info.playerId, config, name, $"Not allowed:{errorMsg}", currentBackpack, B.items).GetAwaiter().GetResult();
                     }
                 };

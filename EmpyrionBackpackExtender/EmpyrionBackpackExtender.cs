@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using EmpyrionNetAPITools.Extensions;
 using Newtonsoft.Json;
-using System.Xml.Linq;
+using System.Collections;
 
 namespace EmpyrionBackpackExtender
 {
@@ -343,15 +343,18 @@ namespace EmpyrionBackpackExtender
 
         private ItemNameStack[] SuperstackItems(ItemNameStack[] itemStack)
         {
-            var result = new Dictionary<int, ItemNameStack>();
+            var result = new List<ItemNameStack>();
             Array.ForEach(itemStack,
                 I => {
-                    if (result.TryGetValue(I.id, out ItemNameStack found)) result[I.id] = Convert(new ItemStack(I.id, result[I.id].count + I.count));
-                    else                                                   result.Add(I.id, I);
+                    ItemNameStack found = null;
+                    if (IsStackableItem(I) && (found = result.FirstOrDefault(i => i.id == I.id)) != default) found.count += I.count;
+                    else                                                                                     result.Add(I);
                 });
 
-            return result.Values.ToArray();
+            return result.ToArray();
         }
+
+        private bool IsStackableItem(ItemNameStack i) => i.ammo == 0 && i.decay == 0 && i.count > 1; // Nur Items die schon stackbar sind und ohne Verfallszeit oder Munition gerechnet werden
 
         private async Task DisplayHelp(ChatInfo info, BackpackConfiguration config, string name, Func<PlayerInfo, string> idFunc)
         {
@@ -370,7 +373,7 @@ namespace EmpyrionBackpackExtender
             }
 
             await DisplayHelp(info.playerId,
-                $"max allowed {name} backpacks: {config.MaxBackpacks}\n" +
+                $"max allowed {name} {(config.AllowSuperstack ? "superstack backpacks" : "backpacks")}: {config.MaxBackpacks}\n" +
                 (config.Price > 0 ? $"price per {name} backpack: {config.Price}\nyou have {currentBackpackLength} {name} backpack(s)\n" : "") +
                 PlayfieldList("\nallowed playfields:",   config.AllowedPlayfields) +
                 PlayfieldList("\nforbidden playfields:", config.ForbiddenPlayfields) +

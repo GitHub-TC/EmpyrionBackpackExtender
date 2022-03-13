@@ -34,7 +34,7 @@ Zusammen mit einem Backslash am Anfang und im Fraktionschat sind die Kommandos a
   * MaxBackpacks = Anzahl der maximal erlaubten Backpacks
   * Price = Preis für ein Backpack
   * OpenCooldownSecTimer = Zeit in der das Backpack nicht erneut geöffnet werden kann
-  * AllowSuperstack = sollen die Items zusammengefasst werden (OBACHT: hierbei gehen die Informationen zu Abnutzung und Ladungen verloren)
+  * AllowSuperstack = sollen die Items zusammengefasst werden (OBACHT: Nur Gegenstände ohne Munition, Verfall und mit einer Stapelgröße > 1 werden als Superstapel zusammengefasst)
   * AllowedPlayfields = Liste der Playfields auf denen das Backpack erlaubt ist
   * ForbiddenPlayfields = Liste der Playfields auf denen das Backpack verboten ist
   * FilenamePattern = Speicherort und Dateiname der Backpacks
@@ -80,7 +80,7 @@ Together with a backslash at the beginning and in the fractional table, the comm
   * MaxBackpacks = number of maximum allowed backpacks
   * Price = price for a backpack
   * OpenCooldownSecTimer = Time in which the backpack can not be reopened
-  * AllowSuperstack = the items should be summarized (CARE: here the information on wear and charges is lost)
+  * AllowSuperstack = the items should be summarized (CARE: Only items without ammo, decay and with a stack size > 1 are summarized as superstack)
   * AllowedPlayfields = List of playfields where the backpack is allowed
   * ForbiddenPlayfields = List of playfields on which the backpack is prohibited
   * FilenamePattern = Location and filename of the backpacks

@@ -346,9 +346,9 @@ namespace EmpyrionBackpackExtender
             var result = new List<ItemNameStack>();
             Array.ForEach(itemStack,
                 I => {
-                    ItemNameStack found = null;
-                    if (IsStackableItem(I) && (found = result.FirstOrDefault(i => i.id == I.id)) != default) found.count += I.count;
-                    else                                                                                     result.Add(I);
+                    var found = result.FirstOrDefault(i => i.id == I.id && (i.count + I.count) <= Configuration.Current.MAX_STACK_SIZE);
+                    if (found != null && (found.count > 1 || IsStackableItem(I))) found.count += I.count;
+                    else                                                          result.Add(I);
                 });
 
             return result.ToArray();

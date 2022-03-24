@@ -240,12 +240,12 @@ namespace EmpyrionBackpackExtender
                 Log($"***OpendBackpack player:{P.playerName}[{P.entityId}/{P.steamId}] used backpack {usedBackpackNo} with used slots:{backpackItemCount}");
 
                 Action<ItemExchangeInfo> eventCallback = null;
-                bool isBackpackOpenOkResult = true;
-                eventCallback = (B) =>
+                bool? isBackpackOpenOkResult = null;
+                eventCallback = new Action<ItemExchangeInfo>((B) =>
                 {
-                    if (P.entityId != B.id) return;
+                    if (P.entityId != B.id || !isBackpackOpenOkResult.HasValue) return;
                     
-                    if(isBackpackOpenOkResult)
+                    if(isBackpackOpenOkResult.Value)
                     {
                         isBackpackOpenOkResult = false;
                         return;
@@ -266,10 +266,11 @@ namespace EmpyrionBackpackExtender
                         isBackpackOpenOkResult = true;
                         OpenBackpackItemExcange(info.playerId, config, name, $"Not allowed:{errorMsg}", currentBackpack, B.items).GetAwaiter().GetResult();
                     }
-                };
+                });
 
                 Event_Player_ItemExchange += eventCallback;
                 BackPackLastOpend.AddOrUpdate($"{P.steamId}{name}", DateTime.Now, (S, D) => DateTime.Now);
+                isBackpackOpenOkResult = true;
 
                 await OpenBackpackItemExcange(info.playerId, config, name, "", currentBackpack, currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items?.Select(i => Convert(i)).ToArray() ?? new ItemStack[] { });
             }

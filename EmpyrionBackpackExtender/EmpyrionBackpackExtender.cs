@@ -236,6 +236,9 @@ namespace EmpyrionBackpackExtender
                 currentBackpack.Current.LastAccessFactionName   = CurrentFactions != null && CurrentFactions.factions != null ? CurrentFactions.factions.FirstOrDefault(F => F.factionId == P.factionId).abbrev : P.factionId.ToString();
                 currentBackpack.Save();
 
+                var backpackItemCount = currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items.Length;
+                Log($"***OpendBackpack player:{P.playerName}[{P.entityId}/{P.steamId}] used backpack {usedBackpackNo} with used slots:{backpackItemCount}");
+
                 Action<ItemExchangeInfo> eventCallback = null;
                 bool isBackpackOpenOkResult = true;
                 eventCallback = (B) =>
@@ -250,11 +253,16 @@ namespace EmpyrionBackpackExtender
 
                     if (ItemStacksOk(config, B.items, out var errorMsg))
                     {
+                        Log($"***CloseBackpack Player:{P.playerName}[{P.entityId}/{P.steamId}] used slots:{backpackItemCount}->{B.items?.Length ?? 0}");
+                        if(backpackItemCount > 0 && (B.items?.Length ?? 0) == 0) Log($"***CloseBackpack POSSIBLE ITEMS LOSS for player:{P.playerName}[{P.entityId}/{P.steamId}] slots:{backpackItemCount}->{B.items?.Length ?? 0} items:{JsonConvert.SerializeObject(currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items)}", LogLevel.Error);
+
                         Event_Player_ItemExchange -= eventCallback;
                         EmpyrionBackpackExtender_Event_Player_ItemExchange(B, currentBackpack, config, usedBackpackNo);
                     }
                     else
                     {
+                        Log($"***ReopendBackpack Player:{P.playerName}[{P.entityId}/{P.steamId}] Slots:{B.items?.Length}");
+
                         isBackpackOpenOkResult = true;
                         OpenBackpackItemExcange(info.playerId, config, name, $"Not allowed:{errorMsg}", currentBackpack, B.items).GetAwaiter().GetResult();
                     }

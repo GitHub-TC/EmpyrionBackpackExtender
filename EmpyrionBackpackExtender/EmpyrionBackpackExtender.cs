@@ -253,8 +253,8 @@ namespace EmpyrionBackpackExtender
 
                     if (ItemStacksOk(config, B.items, out var errorMsg))
                     {
-                        Log($"***CloseBackpack Player:{P.playerName}[{P.entityId}/{P.steamId}] used slots:{backpackItemCount}->{B.items?.Length ?? 0}");
-                        if(backpackItemCount > 0 && (B.items?.Length ?? 0) == 0) Log($"***CloseBackpack POSSIBLE ITEMS LOSS for player:{P.playerName}[{P.entityId}/{P.steamId}] slots:{backpackItemCount}->{B.items?.Length ?? 0} items:{JsonConvert.SerializeObject(currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items)}", LogLevel.Error);
+                        Log($"***CloseBackpack Player:{P.playerName}[{P.entityId}/{P.steamId}] used backpack {usedBackpackNo} with used slots:{backpackItemCount}->{B.items?.Length ?? 0}");
+                        if(backpackItemCount > 0 && (B.items?.Length ?? 0) == 0) Log($"***CloseBackpack POSSIBLE ITEMS LOSS for player:{P.playerName}[{P.entityId}/{P.steamId}] used backpack {usedBackpackNo} with used slots:{backpackItemCount}->{B.items?.Length ?? 0} items:{JsonConvert.SerializeObject(currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items)}", LogLevel.Error);
 
                         Event_Player_ItemExchange -= eventCallback;
                         EmpyrionBackpackExtender_Event_Player_ItemExchange(B, currentBackpack, config, usedBackpackNo);

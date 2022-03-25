@@ -236,7 +236,7 @@ namespace EmpyrionBackpackExtender
                 currentBackpack.Current.LastAccessFactionName   = CurrentFactions != null && CurrentFactions.factions != null ? CurrentFactions.factions.FirstOrDefault(F => F.factionId == P.factionId).abbrev : P.factionId.ToString();
                 currentBackpack.Save();
 
-                var backpackItemCount = currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items.Length;
+                var backpackItemCount = currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items?.Length ?? 0;
                 Log($"***OpendBackpack player:{P.playerName}[{P.entityId}/{P.steamId}] used backpack {usedBackpackNo} with used slots:{backpackItemCount}");
 
                 Action<ItemExchangeInfo> eventCallback = null;

@@ -104,10 +104,10 @@ namespace EmpyrionBackpackExtender
         {
             if (config.MaxBackpacks == 0) return;
 
-                                        ChatCommands.Add(new ChatCommand($"{config.ChatCommand} help",               (I, A) => DisplayHelp (I, config, name, idFunc), $"help and commands for the {name} backpack"));
+                                        ChatCommands.Add(new ChatCommand($"{config.ChatCommand} help",               (I, A) => DisplayHelp (I,    config, name, idFunc), $"help and commands for the {name} backpack"));
             if(config.MaxBackpacks > 1) ChatCommands.Add(new ChatCommand($"{config.ChatCommand} (?<number>\\d+)",    (I, A) => OpenBackpack(I, A, config, name, idFunc), $"Open the <N> = 1, 2, 3,... {name} backpack"));
                                         ChatCommands.Add(new ChatCommand($"{config.ChatCommand}",                    (I, A) => OpenBackpack(I, A, config, name, idFunc), $"Open the current {name} backpack"));
-            if(config.MaxBackpacks > 1) ChatCommands.Add(new ChatCommand($"{config.ChatCommand} buy",                (I, A) => BuyBackpack(I, A, config, name, idFunc), $"buy another {name} backpack"));
+                                        ChatCommands.Add(new ChatCommand($"{config.ChatCommand} buy",                (I, A) => BuyBackpack (I, A, config, name, idFunc), $"buy a {name} backpack"));
         }
 
         private async Task BuyBackpack(ChatInfo info, Dictionary<string, string> args, BackpackConfiguration config, string name, Func<PlayerInfo, string> idFunc)

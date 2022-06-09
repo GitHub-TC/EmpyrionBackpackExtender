@@ -11,6 +11,7 @@ using System.Collections.Concurrent;
 using EmpyrionNetAPITools.Extensions;
 using Newtonsoft.Json;
 using System.Collections;
+using System.Xml.Linq;
 
 namespace EmpyrionBackpackExtender
 {
@@ -92,21 +93,23 @@ namespace EmpyrionBackpackExtender
             LogLevel = Configuration.Current.LogLevel;
             ChatCommandManager.CommandPrefix = Configuration.Current.ChatCommandPrefix;
 
+            Event_Player_ItemExchange += HandlePlayerItemExchange;
+
             TaskTools.Intervall(60000, () => CurrentFactions = Request_Get_Factions(0.ToId()).Result);
 
-            AddCommandsFor(Configuration.Current.PersonalBackpack, "personal",  P => P.steamId);
-            AddCommandsFor(Configuration.Current.FactionBackpack,  "faction",   P => P.factionId.ToString());
-            AddCommandsFor(Configuration.Current.OriginBackpack,   "origin",    P => P.origin.ToString());
-            AddCommandsFor(Configuration.Current.GlobalBackpack,   "global",    P => "global");
+            AddCommandsFor(Configuration.Current.PersonalBackpack, "personal", BackpackType.Personal,   P => P.steamId);
+            AddCommandsFor(Configuration.Current.FactionBackpack,  "faction",  BackpackType.Fraction,   P => P.factionId.ToString());
+            AddCommandsFor(Configuration.Current.OriginBackpack,   "origin",   BackpackType.Origin,     P => P.origin.ToString());
+            AddCommandsFor(Configuration.Current.GlobalBackpack,   "global",   BackpackType.Global,     P => "global");
         }
 
-        private void AddCommandsFor(BackpackConfiguration config, string name, Func<PlayerInfo, string> idFunc)
+        private void AddCommandsFor(BackpackConfiguration config, string name, BackpackType bpType, Func<PlayerInfo, string> idFunc)
         {
             if (config.MaxBackpacks == 0) return;
 
                                         ChatCommands.Add(new ChatCommand($"{config.ChatCommand} help",               (I, A) => DisplayHelp (I,    config, name, idFunc), $"help and commands for the {name} backpack"));
-            if(config.MaxBackpacks > 1) ChatCommands.Add(new ChatCommand($"{config.ChatCommand} (?<number>\\d+)",    (I, A) => OpenBackpack(I, A, config, name, idFunc), $"Open the <N> = 1, 2, 3,... {name} backpack"));
-                                        ChatCommands.Add(new ChatCommand($"{config.ChatCommand}",                    (I, A) => OpenBackpack(I, A, config, name, idFunc), $"Open the current {name} backpack"));
+            if(config.MaxBackpacks > 1) ChatCommands.Add(new ChatCommand($"{config.ChatCommand} (?<number>\\d+)",    (I, A) => OpenBackpack(I, A, config, name, bpType, idFunc), $"Open the <N> = 1, 2, 3,... {name} backpack"));
+                                        ChatCommands.Add(new ChatCommand($"{config.ChatCommand}",                    (I, A) => OpenBackpack(I, A, config, name, bpType, idFunc), $"Open the current {name} backpack"));
                                         ChatCommands.Add(new ChatCommand($"{config.ChatCommand} buy",                (I, A) => BuyBackpack (I, A, config, name, idFunc), $"buy a {name} backpack"));
         }
 
@@ -162,9 +165,11 @@ namespace EmpyrionBackpackExtender
             Request_InGameMessage_SinglePlayer(outMsg);
         }
 
-        private async Task OpenBackpack(ChatInfo info, Dictionary<string, string> args, BackpackConfiguration config, string name, Func<PlayerInfo, string> getConfigFileId)
+        private async Task OpenBackpack(ChatInfo info, Dictionary<string, string> args, BackpackConfiguration config, string name, BackpackType bpType, Func<PlayerInfo, string> getConfigFileId)
         {
             string playerName = null;
+            ConfigurationManager<BackpackData> currentBackpack = null;
+
             try { 
                 Log($"**OpenBackpack {info.type}:{info.msg} {args.Aggregate("", (s, i) => s + i.Key + "/" + i.Value + " ")}");
 
@@ -179,7 +184,7 @@ namespace EmpyrionBackpackExtender
                     return;
                 }
 
-                ConfigurationManager<BackpackData> currentBackpack = new ConfigurationManager<BackpackData>()
+                currentBackpack = new ConfigurationManager<BackpackData>()
                 {
                     ConfigFilename = Path.Combine(EmpyrionConfiguration.SaveGameModPath, String.Format(config.FilenamePattern, getConfigFileId(P)))
                 };
@@ -237,47 +242,121 @@ namespace EmpyrionBackpackExtender
                 currentBackpack.Save();
 
                 var backpackItemCount = currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items?.Length ?? 0;
+
+                SetPlayerBackpackState(P.entityId, new PlayerBackpackState { 
+                    PlayerId                = P.entityId,
+                    PlayerName              = P.playerName,
+                    PlayerSteamId           = P.steamId,
+                    BackpackType            = bpType,
+                    BackpackNumber          = usedBackpackNo,
+                    BackpackItemCount       = backpackItemCount,
+                    CurrentBackpackName     = name,
+                    CurrentBackpackFilename = currentBackpack.ConfigFilename,
+                    State                   = BackpackState.PreOpen
+                } );
+
                 Log($"***OpendBackpack player:{P.playerName}[{P.entityId}/{P.steamId}] used backpack {usedBackpackNo} with used slots:{backpackItemCount}");
 
-                Action<ItemExchangeInfo> eventCallback = null;
-                bool? isBackpackOpenOkResult = null;
-                eventCallback = new Action<ItemExchangeInfo>((B) =>
-                {
-                    if (P.entityId != B.id || !isBackpackOpenOkResult.HasValue) return;
-                    
-                    if(isBackpackOpenOkResult.Value)
-                    {
-                        isBackpackOpenOkResult = false;
-                        return;
-                    }
-
-                    if (ItemStacksOk(config, B.items, out var errorMsg))
-                    {
-                        Log($"***CloseBackpack Player:{P.playerName}[{P.entityId}/{P.steamId}] used backpack {usedBackpackNo} with used slots:{backpackItemCount}->{B.items?.Length ?? 0}");
-                        if(backpackItemCount > 0 && (B.items?.Length ?? 0) == 0) Log($"***CloseBackpack POSSIBLE ITEMS LOSS for player:{P.playerName}[{P.entityId}/{P.steamId}] used backpack {usedBackpackNo} with used slots:{backpackItemCount}->{B.items?.Length ?? 0} items:{JsonConvert.SerializeObject(currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items)}", LogLevel.Error);
-
-                        Event_Player_ItemExchange -= eventCallback;
-                        EmpyrionBackpackExtender_Event_Player_ItemExchange(B, currentBackpack, config, usedBackpackNo);
-                    }
-                    else
-                    {
-                        Log($"***ReopendBackpack Player:{P.playerName}[{P.entityId}/{P.steamId}] Slots:{B.items?.Length}");
-
-                        isBackpackOpenOkResult = true;
-                        OpenBackpackItemExcange(info.playerId, config, name, $"Not allowed:{errorMsg}", currentBackpack, B.items).GetAwaiter().GetResult();
-                    }
-                });
-
-                Event_Player_ItemExchange += eventCallback;
                 BackPackLastOpend.AddOrUpdate($"{P.steamId}{name}", DateTime.Now, (S, D) => DateTime.Now);
-                isBackpackOpenOkResult = true;
 
-                await OpenBackpackItemExcange(info.playerId, config, name, "", currentBackpack, currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items?.Select(i => Convert(i)).ToArray() ?? new ItemStack[] { });
+                await OpenBackpackItemExcange(info.playerId, config, name, "", usedBackpackNo, currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items?.Select(i => Convert(i)).ToArray() ?? new ItemStack[] { });
+
+                currentBackpack.Dispose();
             }
             catch (Exception error) {
                 Log($"backpack open failed for player '{playerName}'/{info.playerId} :{error}", LogLevel.Error);
                 MessagePlayer(info.playerId, $"backpack open failed {error}"); 
             }
+        }
+
+        private void HandlePlayerItemExchange(ItemExchangeInfo B)
+        {
+            PlayerBackpackState playerBackpackState = null;
+            try { 
+                if (!Configuration.Current.OpendBackpacks.TryGetValue(B.id, out playerBackpackState))
+                {
+                    Log($"unkown backpack state for player '{B.id}->{B.items?.Length ?? 0} items:{JsonConvert.SerializeObject(B.items.Select(Convert))}", LogLevel.Error);
+                    return;
+                }
+
+                if (playerBackpackState.State == BackpackState.PreOpen)
+                {
+                    playerBackpackState.State = BackpackState.Opened;
+                    Configuration.Save();
+
+                    return;
+                }
+
+                if (playerBackpackState.State == BackpackState.Opened)
+                {
+                    var config = GetPlayerBackpackConfiguration(playerBackpackState);
+
+                    if (ItemStacksOk(config, B.items, out var errorMsg))
+                    {
+                        playerBackpackState.State = BackpackState.Closed;
+                        Configuration.Save();
+
+                        using (var currentBackpack = new ConfigurationManager<BackpackData> { ConfigFilename = playerBackpackState.CurrentBackpackFilename })
+                        {
+                            currentBackpack.Load();
+    
+                            Log($"***CloseBackpack Player:{playerBackpackState.PlayerName}[{playerBackpackState.PlayerId}/{playerBackpackState.PlayerSteamId}] used backpack {playerBackpackState.BackpackNumber} with used slots:{playerBackpackState.BackpackItemCount}->{B.items?.Length ?? 0}");
+                            if (playerBackpackState.BackpackItemCount > 0 && (B.items?.Length ?? 0) == 0) Log($"***CloseBackpack POSSIBLE ITEMS LOSS for player:{playerBackpackState.PlayerName}[{playerBackpackState.PlayerId}/{playerBackpackState.PlayerSteamId}] used backpack {playerBackpackState.BackpackNumber} with used slots:{playerBackpackState.BackpackItemCount}->{B.items?.Length ?? 0} items:{JsonConvert.SerializeObject(currentBackpack.Current.Backpacks[playerBackpackState.BackpackNumber - 1].Items)}", LogLevel.Error);
+
+                            EmpyrionBackpackExtender_Event_Player_ItemExchange(B, currentBackpack, config, playerBackpackState.BackpackNumber);
+
+                            Configuration.Current.OpendBackpacks.Remove(B.id);
+                            Configuration.Save();
+                        }
+                    }
+                    else
+                    {
+                        Log($"***ReopendBackpack Player:{playerBackpackState.PlayerName}[{playerBackpackState.PlayerId}/{playerBackpackState.PlayerSteamId}] Slots:{B.items?.Length}");
+
+                        playerBackpackState.State = BackpackState.PreOpen;
+                        Configuration.Save();
+
+                        OpenBackpackItemExcange(playerBackpackState.PlayerId, config, playerBackpackState.CurrentBackpackName, $"Not allowed:{errorMsg}", playerBackpackState.BackpackNumber, B.items).GetAwaiter().GetResult();
+                    }
+                }
+            }
+            catch (Exception error)
+            {
+                Log($"backpack open failed for player '{playerBackpackState?.PlayerName}'/{playerBackpackState?.PlayerId} :{error}", LogLevel.Error);
+                MessagePlayer(playerBackpackState.PlayerId, $"backpack open failed {error}");
+            }
+        }
+
+        private BackpackConfiguration GetPlayerBackpackConfiguration(PlayerBackpackState playerBackpackState)
+        {
+            switch (playerBackpackState.BackpackType)
+            {
+                default                     : return null;
+                case BackpackType.Personal  : return Configuration.Current.PersonalBackpack;
+                case BackpackType.Fraction  : return Configuration.Current.FactionBackpack;
+                case BackpackType.Origin    : return Configuration.Current.OriginBackpack;
+                case BackpackType.Global    : return Configuration.Current.GlobalBackpack;
+            }
+        }
+
+        private void UpdatePlayerBackpackState(int entityId, BackpackState newState)
+        {
+            if (!Configuration.Current.OpendBackpacks.TryGetValue(entityId, out var state))
+            {
+                Log($"unkown backpack state for player '{entityId}", LogLevel.Error);
+                return;
+            }
+
+            state.State = newState;
+            Configuration.Save();
+        }
+
+        private void SetPlayerBackpackState(int id, PlayerBackpackState newState)
+        {
+            if(Configuration.Current.OpendBackpacks.ContainsKey(id)) Configuration.Current.OpendBackpacks[id] = newState;
+            else                                                     Configuration.Current.OpendBackpacks.Add(id, newState);
+
+            Configuration.Save();
         }
 
         private ItemStack Convert(ItemNameStack i)
@@ -320,7 +399,7 @@ namespace EmpyrionBackpackExtender
             
             return string.IsNullOrEmpty(errorMsg);
         }
-        private async Task OpenBackpackItemExcange(int playerId, BackpackConfiguration config, string name, string description, ConfigurationManager<BackpackData> currentBackpack, ItemStack[] items)
+        private async Task OpenBackpackItemExcange(int playerId, BackpackConfiguration config, string name, string description, int lastUsed, ItemStack[] items)
         {
             var exchange = new ItemExchangeInfo()
             {
@@ -328,7 +407,7 @@ namespace EmpyrionBackpackExtender
                 desc        = description,
                 id          = playerId,
                 items       = items ?? new ItemStack[] { },
-                title       = $"Backpack ({name}) {(config.MaxBackpacks > 1 ? "#" + currentBackpack.Current.LastUsed : string.Empty)}"
+                title       = $"Backpack ({name}) {(config.MaxBackpacks > 1 ? "#" + lastUsed : string.Empty)}"
             };
 
             try { await Request_Player_ItemExchange(Timeouts.NoResponse, exchange); } // ignore Timeout Exception

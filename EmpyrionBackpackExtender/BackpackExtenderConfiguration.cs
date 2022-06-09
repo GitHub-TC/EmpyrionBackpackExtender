@@ -1,6 +1,7 @@
 ﻿using EmpyrionNetAPIDefinitions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using System.Collections.Generic;
 
 namespace EmpyrionBackpackExtender
 {
@@ -63,5 +64,37 @@ namespace EmpyrionBackpackExtender
             OpenCooldownSecTimer = 30 * 60,
             FilenamePattern = @"Global\{0}.json"
         };
+
+        public IDictionary<int, PlayerBackpackState> OpendBackpacks { get; set; } = new Dictionary<int, PlayerBackpackState>();
+    }
+
+    public enum BackpackType
+    {
+        Personal,
+        Fraction,
+        Origin,
+        Global
+    }
+
+    public enum BackpackState
+    {
+        None,
+        PreOpen,
+        Opened,
+        Closed,
+    }
+    public class PlayerBackpackState
+    {
+        public int PlayerId { get; set; }
+        public string PlayerName { get; set; }
+        public string PlayerSteamId { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public BackpackType BackpackType { get; set; }
+        public int BackpackNumber { get; set; }
+        public int BackpackItemCount { get; set; }
+        public string CurrentBackpackFilename { get; set; }
+        public string CurrentBackpackName { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public BackpackState State { get; set; }
     }
 }

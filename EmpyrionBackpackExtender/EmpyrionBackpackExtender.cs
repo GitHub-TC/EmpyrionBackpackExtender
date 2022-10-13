@@ -25,10 +25,13 @@ namespace EmpyrionBackpackExtender
         public IReadOnlyDictionary<string, int> BlockNameIdMapping
         {
             get {
-                if (_BlockNameIdMapping == null && File.Exists(Configuration.Current.NameIdMappingFile ?? string.Empty))
-                    Log($"NameIdMapping:'{Configuration.Current.NameIdMappingFile}' CurrentDirectory:{Directory.GetCurrentDirectory()}", LogLevel.Message);
-                    try{ _BlockNameIdMapping = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(Configuration.Current.NameIdMappingFile)); }
-                    catch (Exception error) { Log($"NameIdMapping read failed:{error}", LogLevel.Error); }
+                if (_BlockNameIdMapping == null && File.Exists(Configuration.Current?.NameIdMappingFile ?? string.Empty))
+                {
+                    Log($"EmpyrionBackpackExtender: NameIdMapping:'{Configuration.Current.NameIdMappingFile}' CurrentDirectory:{Directory.GetCurrentDirectory()}", LogLevel.Message);
+                    try { _BlockNameIdMapping = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(Configuration.Current.NameIdMappingFile)); }
+                    catch (Exception error) { Log($"EmpyrionBackpackExtender: NameIdMapping read failed:{error}", LogLevel.Error); }
+                    Log($"EmpyrionBackpackExtender: NameIdMapping:#{_BlockNameIdMapping.Count}", LogLevel.Message);
+                }
 
                 return _BlockNameIdMapping;
             }
@@ -39,8 +42,11 @@ namespace EmpyrionBackpackExtender
         {
             get {
                 if (_BlockIdNameMapping == null)
+                {
                     try { _BlockIdNameMapping = BlockNameIdMapping.ToDictionary(b => b.Value, b => b.Key); }
-                    catch (Exception error) { Console.WriteLine(error); }
+                    catch (Exception error) { Log($"EmpyrionBackpackExtender: BlockIdNameMapping convert failed:{error}", LogLevel.Error); }
+                    Log($"EmpyrionBackpackExtender: BlockIdNameMapping convert:#{_BlockIdNameMapping.Count}", LogLevel.Message);
+                }
 
                 return _BlockIdNameMapping;
             }

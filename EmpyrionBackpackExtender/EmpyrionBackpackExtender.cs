@@ -25,12 +25,15 @@ namespace EmpyrionBackpackExtender
         public IReadOnlyDictionary<string, int> BlockNameIdMapping
         {
             get {
-                if (_BlockNameIdMapping == null && File.Exists(Configuration.Current?.NameIdMappingFile ?? string.Empty))
+                if (_BlockNameIdMapping == null && 
+                    !string.IsNullOrEmpty(Configuration.Current?.NameIdMappingFile) &&
+                    Configuration.Current?.NameIdMappingFile != BackpackExtenderConfiguration.MappingFilePathHint &&
+                    File.Exists(Configuration.Current?.NameIdMappingFile))
                 {
                     Log($"EmpyrionBackpackExtender: NameIdMapping:'{Configuration.Current.NameIdMappingFile}' CurrentDirectory:{Directory.GetCurrentDirectory()}", LogLevel.Message);
                     try { _BlockNameIdMapping = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(Configuration.Current.NameIdMappingFile)); }
                     catch (Exception error) { Log($"EmpyrionBackpackExtender: NameIdMapping read failed:{error}", LogLevel.Error); }
-                    Log($"EmpyrionBackpackExtender: NameIdMapping:#{_BlockNameIdMapping.Count}", LogLevel.Message);
+                    Log($"EmpyrionBackpackExtender: NameIdMapping:#{_BlockNameIdMapping?.Count}", LogLevel.Message);
                 }
 
                 return _BlockNameIdMapping;
@@ -41,11 +44,13 @@ namespace EmpyrionBackpackExtender
         public IReadOnlyDictionary<int, string> BlockIdNameMapping
         {
             get {
-                if (_BlockIdNameMapping == null)
+                if (_BlockIdNameMapping == null && BlockNameIdMapping != null)
                 {
-                    try { _BlockIdNameMapping = BlockNameIdMapping.ToDictionary(b => b.Value, b => b.Key); }
+                    try { 
+                        _BlockIdNameMapping = BlockNameIdMapping?.ToDictionary(b => b.Value, b => b.Key);
+                        Log($"EmpyrionBackpackExtender: BlockIdNameMapping convert:#{_BlockIdNameMapping?.Count}", LogLevel.Message);
+                    }
                     catch (Exception error) { Log($"EmpyrionBackpackExtender: BlockIdNameMapping convert failed:{error}", LogLevel.Error); }
-                    Log($"EmpyrionBackpackExtender: BlockIdNameMapping convert:#{_BlockIdNameMapping.Count}", LogLevel.Message);
                 }
 
                 return _BlockIdNameMapping;

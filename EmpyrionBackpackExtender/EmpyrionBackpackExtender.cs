@@ -31,7 +31,15 @@ namespace EmpyrionBackpackExtender
                     File.Exists(Configuration.Current?.NameIdMappingFile))
                 {
                     Log($"EmpyrionBackpackExtender: NameIdMapping:'{Configuration.Current.NameIdMappingFile}' CurrentDirectory:{Directory.GetCurrentDirectory()}", LogLevel.Message);
-                    try { _BlockNameIdMapping = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(Configuration.Current.NameIdMappingFile)); }
+                    try { 
+                        _BlockNameIdMapping = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(Configuration.Current.NameIdMappingFile));
+                        if (_BlockNameIdMappingWatcher == null)
+                        {
+                            _BlockNameIdMappingWatcher = new FileSystemWatcher(Path.GetDirectoryName(Configuration.Current.NameIdMappingFile), Path.GetFileName(Configuration.Current.NameIdMappingFile));
+                            _BlockNameIdMappingWatcher.Changed += (s, a) => { _BlockNameIdMapping = null; _BlockIdNameMapping = null; };
+                            _BlockNameIdMappingWatcher.EnableRaisingEvents = true;
+                        }
+                    }
                     catch (Exception error) { Log($"EmpyrionBackpackExtender: NameIdMapping read failed:{error}", LogLevel.Error); }
                     Log($"EmpyrionBackpackExtender: NameIdMapping:#{_BlockNameIdMapping?.Count}", LogLevel.Message);
                 }
@@ -40,6 +48,7 @@ namespace EmpyrionBackpackExtender
             }
         }
         IReadOnlyDictionary<string, int> _BlockNameIdMapping;
+        private FileSystemWatcher _BlockNameIdMappingWatcher;
 
         public IReadOnlyDictionary<int, string> BlockIdNameMapping
         {
@@ -105,6 +114,7 @@ namespace EmpyrionBackpackExtender
             ChatCommandManager.CommandPrefix = Configuration.Current.ChatCommandPrefix;
 
             Event_Player_ItemExchange += HandlePlayerItemExchange;
+            API_Exit += () => { if(_BlockNameIdMappingWatcher != null) _BlockNameIdMappingWatcher.EnableRaisingEvents = false; };
 
             TaskTools.Intervall(60000, () => CurrentFactions = Request_Get_Factions(0.ToId()).Result);
 

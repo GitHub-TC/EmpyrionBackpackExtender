@@ -280,7 +280,9 @@ namespace EmpyrionBackpackExtender
 
                 BackPackLastOpend.AddOrUpdate($"{P.steamId}{name}", DateTime.Now, (S, D) => DateTime.Now);
 
-                await OpenBackpackItemExcange(info.playerId, config, name, "", usedBackpackNo, currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items?.Select(i => Convert(i)).ToArray() ?? new ItemStack[] { });
+                await OpenBackpackItemExcange(info.playerId, config, name, "", usedBackpackNo, 
+                    CheckItems(currentBackpack.Current.Backpacks[usedBackpackNo - 1].Items?.Select(i => Convert(i)).ToArray() ?? new ItemStack[] { })
+                );
 
                 currentBackpack.Dispose();
             }
@@ -289,6 +291,15 @@ namespace EmpyrionBackpackExtender
                 MessagePlayer(info.playerId, $"backpack open failed {error}"); 
             }
         }
+
+        private ItemStack[] CheckItems(ItemStack[] itemStacks) 
+            => BlockIdNameMapping?.Count > 0 
+            ? itemStacks.Where(I =>
+                { if (BlockIdNameMapping.ContainsKey(I.id)) return true;
+                    Log($"Item not exists '{I.id}'", LogLevel.Error);
+                    return false;
+                }).ToArray() 
+            : itemStacks;
 
         private void HandlePlayerItemExchange(ItemExchangeInfo B)
         {

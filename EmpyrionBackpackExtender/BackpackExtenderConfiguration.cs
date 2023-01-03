@@ -30,8 +30,7 @@ namespace EmpyrionBackpackExtender
         [JsonConverter(typeof(StringEnumConverter))]
         public LogLevel LogLevel { get; set; } = LogLevel.Message;
         public string ChatCommandPrefix { get; set; } = "/\\";
-        public const string MappingFilePathHint = "filepath to the NameIdMapping.json e.g. from EmpyrionScripting for cross savegame support";
-        public string NameIdMappingFile { get; set; } = MappingFilePathHint;
+        public string NameIdMappingFile { get; set; } = "filepath to the NameIdMapping.json e.g. from EmpyrionScripting for cross savegame support";
         public int MAX_STACK_SIZE { get; set; } = 16777215 - 1;
 
         public BackpackConfiguration PersonalBackpack { get; set; } = new BackpackConfiguration() {

@@ -12,6 +12,7 @@ using EmpyrionNetAPITools.Extensions;
 using Newtonsoft.Json;
 using System.Collections;
 using System.Xml.Linq;
+using NameIdMappingTools;
 
 namespace EmpyrionBackpackExtender
 {
@@ -22,74 +23,7 @@ namespace EmpyrionBackpackExtender
         public ConcurrentDictionary<string, DateTime> BackPackLastOpend { get; private set; } = new ConcurrentDictionary<string, DateTime>();
         public FactionInfoList CurrentFactions { get; set; }
 
-        public IReadOnlyDictionary<string, int> BlockNameIdMapping
-        {
-            get {
-                if (_BlockNameIdMapping == null && 
-                    !string.IsNullOrEmpty(Configuration.Current?.NameIdMappingFile) &&
-                    Configuration.Current?.NameIdMappingFile != BackpackExtenderConfiguration.MappingFilePathHint &&
-                    File.Exists(Configuration.Current?.NameIdMappingFile))
-                {
-                    Log($"EmpyrionBackpackExtender: NameIdMapping:'{Configuration.Current.NameIdMappingFile}' CurrentDirectory:{Directory.GetCurrentDirectory()}", LogLevel.Message);
-                    try { 
-                        _BlockNameIdMapping = JsonConvert.DeserializeObject<Dictionary<string, int>>(File.ReadAllText(Configuration.Current.NameIdMappingFile));
-                        if (_BlockNameIdMappingWatcher == null)
-                        {
-                            _BlockNameIdMappingWatcher = new FileSystemWatcher(Path.GetDirectoryName(Configuration.Current.NameIdMappingFile), Path.GetFileName(Configuration.Current.NameIdMappingFile));
-                            _BlockNameIdMappingWatcher.Changed += (s, a) => { _BlockNameIdMapping = null; _BlockIdNameMapping = null; };
-                            _BlockNameIdMappingWatcher.EnableRaisingEvents = true;
-                        }
-                    }
-                    catch (Exception error) { Log($"EmpyrionBackpackExtender: NameIdMapping read failed:{error}", LogLevel.Error); }
-                    Log($"EmpyrionBackpackExtender: NameIdMapping:#{_BlockNameIdMapping?.Count}", LogLevel.Message);
-                }
-
-                return _BlockNameIdMapping;
-            }
-        }
-        IReadOnlyDictionary<string, int> _BlockNameIdMapping;
-        private FileSystemWatcher _BlockNameIdMappingWatcher;
-
-        public IReadOnlyDictionary<int, string> BlockIdNameMapping
-        {
-            get {
-                if (_BlockIdNameMapping == null && BlockNameIdMapping != null)
-                {
-                    try { 
-                        _BlockIdNameMapping = BlockNameIdMapping?.ToDictionary(b => b.Value, b => b.Key);
-                        Log($"EmpyrionBackpackExtender: BlockIdNameMapping convert:#{_BlockIdNameMapping?.Count}", LogLevel.Message);
-                    }
-                    catch (Exception error) { Log($"EmpyrionBackpackExtender: BlockIdNameMapping convert failed:{error}", LogLevel.Error); }
-                }
-
-                return _BlockIdNameMapping;
-            }
-        }
-         IReadOnlyDictionary<int, string> _BlockIdNameMapping;
-
-        public static IReadOnlyDictionary<string, int> ReadBlockMapping(string filename)
-        {
-            if (!File.Exists(filename)) return null;
-
-            var result = new ConcurrentDictionary<string, int>();
-
-            var fileContent = File.ReadAllBytes(filename);
-            for (var currentOffset = 9; currentOffset < fileContent.Length;)
-            {
-                var len = fileContent[currentOffset++];
-                var name = System.Text.Encoding.ASCII.GetString(fileContent, currentOffset, len);
-                currentOffset += len;
-
-                var id = fileContent[currentOffset++] | fileContent[currentOffset++] << 8;
-
-                result.AddOrUpdate(name, id, (s, i) => id);
-            }
-
-            return result;
-        }
-
-
-
+        public BlockNameIdMapping Mapping { get; }
 
         enum ChatType
         {
@@ -100,6 +34,9 @@ namespace EmpyrionBackpackExtender
         public EmpyrionBackpackExtender()
         {
             EmpyrionConfiguration.ModName = "EmpyrionBackpackExtender";
+            BlockNameIdMapping.Log = Log;
+
+            Mapping = new BlockNameIdMapping(() => Configuration?.Current?.NameIdMappingFile);
         }
 
         public override void Initialize(ModGameAPI dediAPI)
@@ -114,7 +51,7 @@ namespace EmpyrionBackpackExtender
             ChatCommandManager.CommandPrefix = Configuration.Current.ChatCommandPrefix;
 
             Event_Player_ItemExchange += HandlePlayerItemExchange;
-            API_Exit += () => { if(_BlockNameIdMappingWatcher != null) _BlockNameIdMappingWatcher.EnableRaisingEvents = false; };
+            API_Exit += () => Mapping.Dispose();
 
             TaskTools.Intervall(60000, () => CurrentFactions = Request_Get_Factions(0.ToId()).Result);
 
@@ -293,9 +230,9 @@ namespace EmpyrionBackpackExtender
         }
 
         private ItemStack[] CheckItems(ItemStack[] itemStacks) 
-            => BlockIdNameMapping?.Count > 0 
+            => Mapping.IdName?.Count > 0 
             ? itemStacks.Where(I =>
-                { if (BlockIdNameMapping.ContainsKey(I.id)) return true;
+                { if (Mapping.IdName.ContainsKey(I.id)) return true;
                     Log($"Item not exists '{I.id}'", LogLevel.Error);
                     return false;
                 }).ToArray() 
@@ -394,7 +331,7 @@ namespace EmpyrionBackpackExtender
         private ItemStack Convert(ItemNameStack i)
         {
             int id = i.id;
-            return new ItemStack(i.name == null ? i.id : BlockNameIdMapping?.TryGetValue(i.name, out id) == true ? id : i.id, i.count)
+            return new ItemStack(i.name == null ? i.id : Mapping.NameId?.TryGetValue(i.name, out id) == true ? id : i.id, i.count)
             {
                 ammo    = i.ammo,
                 decay   = i.decay,
@@ -407,7 +344,7 @@ namespace EmpyrionBackpackExtender
             string name = null;
             return new ItemNameStack{
                 id      = i.id,
-                name    = BlockIdNameMapping?.TryGetValue(i.id, out name) == true ? name : null,
+                name    = Mapping.IdName?.TryGetValue(i.id, out name) == true ? name : null,
                 count   = i.count,
                 ammo    = i.ammo,
                 decay   = i.decay,
@@ -427,7 +364,7 @@ namespace EmpyrionBackpackExtender
             });
 
             if (config.ForbiddenItems != null && config.ForbiddenItems.Length > 0) errorMsg = config.ForbiddenItems?.Aggregate(errorMsg, (msg, I) => flattenItems.       Any(i => i.Key == I.Id && i.Value  > I.Count) ? msg + $"({I.ItemName} > {I.Count}) " : msg);
-            if (config.AllowedItems   != null && config.AllowedItems  .Length > 0) errorMsg = flattenItems          .Aggregate(errorMsg, (msg, I) => config.AllowedItems.Any(i => I.Key == i.Id && I.Value <= i.Count) ? msg : msg + $"({(BlockIdNameMapping?.TryGetValue(I.Key, out var name) == true ? $"{name} [{I.Key}]" : I.Key.ToString())} > {config.AllowedItems.FirstOrDefault(i => i.Id == I.Key)?.Count ?? 0}) ");
+            if (config.AllowedItems   != null && config.AllowedItems  .Length > 0) errorMsg = flattenItems          .Aggregate(errorMsg, (msg, I) => config.AllowedItems.Any(i => I.Key == i.Id && I.Value <= i.Count) ? msg : msg + $"({(Mapping.IdName?.TryGetValue(I.Key, out var name) == true ? $"{name} [{I.Key}]" : I.Key.ToString())} > {config.AllowedItems.FirstOrDefault(i => i.Id == I.Key)?.Count ?? 0}) ");
             
             return string.IsNullOrEmpty(errorMsg);
         }

@@ -50,6 +50,8 @@ Ein weiterer Nebeneffekt dieses Systems ist, dass man mindestens eine leere Zell
   * AllowSuperstack = sollen die Items zusammengefasst werden (OBACHT: Nur Gegenstände ohne Munition, Verfall und mit einer Stapelgröße > 1 werden als Superstapel zusammengefasst)
   * AllowedPlayfields = Liste der Playfields auf denen das Backpack erlaubt ist
   * ForbiddenPlayfields = Liste der Playfields auf denen das Backpack verboten ist
+  * HideAllowedPlayfields = Liste der AllowedPlayfields verbergen
+  * HideForbiddenPlayfields = Liste der ForbiddenPlayfields verbergen
   * FilenamePattern = Speicherort und Dateiname der Backpacks
   * ForbiddenItems = { Id: 1234, Count:MaxAllowed, ItemName:"Description for Player" }
   * AllowedItems = { Id: 1234, Count:MaxAllowed, ItemName:"Description for Player" }
@@ -108,6 +110,8 @@ Another side effect of this system is that you need to have at least one empty c
   * OpenCooldownSecTimer = Time in which the backpack can not be reopened
   * AllowSuperstack = the items should be summarized (CARE: Only items without ammo, decay and with a stack size > 1 are summarized as superstack)
   * AllowedPlayfields = List of playfields where the backpack is allowed
+  * HideAllowedPlayfields = Hide list of the AllowedPlayfields
+  * HideForbiddenPlayfields = Hide list of the ForbiddenPlayfields
   * ForbiddenPlayfields = List of playfields on which the backpack is prohibited
   * FilenamePattern = Location and filename of the backpacks
   * ForbiddenItems = { Id: 1234, Count:MaxAllowed, ItemName:"Description for Player" }

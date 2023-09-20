@@ -20,6 +20,8 @@ namespace EmpyrionBackpackExtender
         public bool AllowSuperstack { get; set; }
         public string[] AllowedPlayfields { get; set; } = new string[] { };
         public string[] ForbiddenPlayfields { get; set; } = new string[] { };
+        public bool HideAllowedPlayfields { get; set; }
+        public bool HideForbiddenPlayfields { get; set; }
         public string FilenamePattern { get; set; }
         public ItemData[] ForbiddenItems { get; set; } = new ItemData[] { new ItemData() };
         public ItemData[] AllowedItems { get; set; } = new ItemData[] { };

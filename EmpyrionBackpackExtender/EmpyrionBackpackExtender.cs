@@ -173,7 +173,7 @@ namespace EmpyrionBackpackExtender
                 if (args.TryGetValue("number", out string numberArgs)) int.TryParse(numberArgs, out usedBackpackNo);
                 usedBackpackNo = Math.Max(1, usedBackpackNo);
 
-                if (usedBackpackNo > config.MaxBackpacks)
+                if (usedBackpackNo > Math.Max(currentBackpack.Current.Backpacks.Length, config.MaxBackpacks))
                 {
                     MessagePlayer(info.playerId, $"max allowed backpacks #{config.MaxBackpacks}");
                     return;
@@ -432,8 +432,8 @@ namespace EmpyrionBackpackExtender
             await DisplayHelp(info.playerId,
                 $"max allowed {name} {(config.AllowSuperstack ? "superstack backpacks" : "backpacks")}: {config.MaxBackpacks}\n" +
                 (config.Price > 0 ? $"price per {name} backpack: {config.Price}\nyou have {currentBackpackLength} {name} backpack(s)\n" : "") +
-                PlayfieldList("\nallowed playfields:",   config.AllowedPlayfields) +
-                PlayfieldList("\nforbidden playfields:", config.ForbiddenPlayfields) +
+                (config.HideAllowedPlayfields   ? string.Empty : PlayfieldList("\nallowed playfields:",   config.AllowedPlayfields)) +
+                (config.HideForbiddenPlayfields ? string.Empty : PlayfieldList("\nforbidden playfields:", config.ForbiddenPlayfields)) +
                 (config.ForbiddenItems != null && config.ForbiddenItems.Length > 0 ? $"\nnot allowed:{config.ForbiddenItems?.Aggregate("", (s, i) => s + $" ({i.ItemName} > {i.Count})")}" : "") +
                 (config.AllowedItems   != null && config.AllowedItems  .Length > 0 ? $"\nonly allowed:{config.AllowedItems?.Aggregate("", (s, i) => s + $" ({i.ItemName} <= {i.Count})")}" : "")
             );

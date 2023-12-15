@@ -244,7 +244,7 @@ namespace EmpyrionBackpackExtender
             try { 
                 if (!Configuration.Current.OpendBackpacks.TryGetValue(B.id, out playerBackpackState))
                 {
-                    Log($"unkown backpack state for player '{B.id}->{B.items?.Length ?? 0} items:{JsonConvert.SerializeObject(B.items.Select(Convert))}", LogLevel.Error);
+                    Log($"unkown backpack state for player '{B.id}->{B.items?.Length ?? 0} items:{JsonConvert.SerializeObject(B.items?.Select(Convert))}", LogLevel.Error);
                     return;
                 }
 
@@ -375,7 +375,7 @@ namespace EmpyrionBackpackExtender
                 buttonText  = "close",
                 desc        = description,
                 id          = playerId,
-                items       = items ?? new ItemStack[] { },
+                items       = (items ?? new ItemStack[] { }).Concat(new ItemStack[7*7]).Take(7*7).ToArray(),
                 title       = $"Backpack ({name}) {(config.MaxBackpacks > 1 ? "#" + lastUsed : string.Empty)}"
             };
 

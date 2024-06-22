@@ -157,13 +157,15 @@ namespace EmpyrionBackpackExtender
                     return;
                 }
 
-                if (config.ForbiddenPlayfields.Length > 0 && config.ForbiddenPlayfields.Contains(P.playfield))
+                var playfieldName = CleanUpPlayfieldName(P.playfield);
+
+                if (config.ForbiddenPlayfields.Length > 0 && config.ForbiddenPlayfields.Contains(playfieldName))
                 {
                     MessagePlayer(info.playerId, $"backpacks are not allowed on this playfield");
                     return;
                 }
 
-                if (config.AllowedPlayfields.Length > 0 && !config.AllowedPlayfields.Contains(P.playfield))
+                if (config.AllowedPlayfields.Length > 0 && !config.AllowedPlayfields.Contains(playfieldName))
                 {
                     MessagePlayer(info.playerId, $"backpacks are not allowed on this playfield");
                     return;
@@ -227,6 +229,12 @@ namespace EmpyrionBackpackExtender
                 Log($"backpack open failed for player '{playerName}'/{info.playerId} :{error}", LogLevel.Error);
                 MessagePlayer(info.playerId, $"backpack open failed {error}"); 
             }
+        }
+
+        private string CleanUpPlayfieldName(string playfield)
+        {
+            var instanceNo = playfield.LastIndexOf('#');
+            return instanceNo > 0 ? playfield.Substring(0, instanceNo) : playfield;
         }
 
         private ItemStack[] CheckItems(ItemStack[] itemStacks) 

@@ -59,6 +59,28 @@ namespace EmpyrionBackpackExtender
             AddCommandsFor(Configuration.Current.FactionBackpack,  "faction",  BackpackType.Fraction,   P => P.factionId.ToString());
             AddCommandsFor(Configuration.Current.OriginBackpack,   "origin",   BackpackType.Origin,     P => P.origin.ToString());
             AddCommandsFor(Configuration.Current.GlobalBackpack,   "global",   BackpackType.Global,     P => "global");
+
+            ChatCommands.Add(new ChatCommand($"vb fixmapping", (I, A) => FixAll(I), $"fix the IDs/Names with the given NameIdMapping.json", PermissionType.Admin));
+        }
+
+        private async Task FixAll(ChatInfo chat)
+        {
+            foreach (var item in Directory.GetFiles(Path.Combine(EmpyrionConfiguration.SaveGameModPath, "Personal"), "*.json"))
+            {
+                ConfigurationManager<BackpackData> currentBackpack = new ConfigurationManager<BackpackData>(){ ConfigFilename = item };
+                currentBackpack.Load();
+                foreach (var backpack in currentBackpack.Current.Backpacks)
+                {
+                    if(backpack.Items == null) continue;
+
+                    backpack.Items = CheckItems(backpack.Items.Select(i => Convert(i)).ToArray() ?? new ItemStack[] { })
+                        .Select(i => Convert(i))
+                        .ToArray();
+                }
+                currentBackpack.Save();
+            }
+
+            await Task.CompletedTask;
         }
 
         private void AddCommandsFor(BackpackConfiguration config, string name, BackpackType bpType, Func<PlayerInfo, string> idFunc)

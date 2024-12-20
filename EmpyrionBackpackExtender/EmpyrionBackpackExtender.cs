@@ -65,8 +65,11 @@ namespace EmpyrionBackpackExtender
 
         private async Task FixAll(ChatInfo chat)
         {
+            Log($"Fix Mappings: with '{Configuration?.Current?.NameIdMappingFile}' exists:{File.Exists(Path.Combine(Directory.GetCurrentDirectory(), Configuration?.Current?.NameIdMappingFile))} at:{Directory.GetCurrentDirectory()}");
             foreach (var item in Directory.GetFiles(Path.Combine(EmpyrionConfiguration.SaveGameModPath, "Personal"), "*.json"))
             {
+                Log($"Fix Mappings: {item}");
+
                 ConfigurationManager<BackpackData> currentBackpack = new ConfigurationManager<BackpackData>(){ ConfigFilename = item };
                 currentBackpack.Load();
                 foreach (var backpack in currentBackpack.Current.Backpacks)

@@ -129,6 +129,7 @@ namespace EmpyrionBackpackExtender
 
         private void LoadConfiuration()
         {
+            ConfigurationManager<BackpackExtenderConfiguration>.Log = Log;
             Configuration = new ConfigurationManager<BackpackExtenderConfiguration>
             {
                 ConfigFilename = Path.Combine(EmpyrionConfiguration.SaveGameModPath, @"Configuration.json")
